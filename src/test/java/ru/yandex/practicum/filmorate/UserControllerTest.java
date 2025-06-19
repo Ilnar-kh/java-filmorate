@@ -65,6 +65,6 @@ class UserControllerTest {
 
         controller.create(user1);
         ValidationException ex = assertThrows(ValidationException.class, () -> controller.create(user2));
-        assertTrue(ex.getMessage().contains("Уже используется"));
+        assertTrue(ex.getMessage().contains("уже используется"));
     }
 }

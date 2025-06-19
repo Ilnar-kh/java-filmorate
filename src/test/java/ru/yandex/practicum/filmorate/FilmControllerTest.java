@@ -40,7 +40,7 @@ class FilmControllerTest {
         String longDesc = "a".repeat(201);
         Film film = new Film(null, "Valid", longDesc, LocalDate.of(2000, 1, 1), 120L);
         ValidationException ex = assertThrows(ValidationException.class, () -> controller.create(film));
-        assertTrue(ex.getMessage().contains("Длина описания"));
+        assertTrue(ex.getMessage().contains("длина описания"));
     }
 
     @Test
