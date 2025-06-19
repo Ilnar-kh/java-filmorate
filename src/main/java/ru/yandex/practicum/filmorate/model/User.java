@@ -8,7 +8,8 @@ import java.time.LocalDate;
 
 @NoArgsConstructor
 @AllArgsConstructor
-public @Data class User {
+@Data
+public class User {
 
     private Long id;
     private String email;

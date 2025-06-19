@@ -9,7 +9,8 @@ import java.time.LocalDate;
  */
 @NoArgsConstructor
 @AllArgsConstructor
-public @Data class Film {
+@Data
+public class Film {
 
     private Long id;
     private String name;
