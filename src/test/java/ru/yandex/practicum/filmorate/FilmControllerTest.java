@@ -1,59 +1,91 @@
 package ru.yandex.practicum.filmorate;
 
-import org.junit.jupiter.api.BeforeEach;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.controller.FilmController;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@WebMvcTest(FilmController.class)
 class FilmControllerTest {
 
-    private FilmController controller;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @BeforeEach
-    void setup() {
-        controller = new FilmController();
-    }
+    @Autowired
+    private ObjectMapper mapper;
 
+    // Успешное создание
     @Test
-    void createValidFilm() {
+    void createValidFilm() throws Exception {
         Film film = new Film(null, "Title", "Description", LocalDate.of(2000, 1, 1), 120L);
-        Film created = controller.create(film);
 
-        assertNotNull(created.getId());
-        assertEquals("Title", created.getName());
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(film)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.name").value("Title"));
     }
 
+    // Название не может быть пустым
     @Test
-    void shouldThrowIfNameIsBlank() {
+    void shouldThrowIfNameIsBlank() throws Exception {
         Film film = new Film(null, " ", "Description", LocalDate.of(2000, 1, 1), 120L);
-        ValidationException ex = assertThrows(ValidationException.class, () -> controller.create(film));
-        assertTrue(ex.getMessage().contains("Название"));
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.name").value("Название не может быть пустым"));
     }
 
+    // Описание слишком длинное
     @Test
-    void shouldThrowIfDescriptionTooLong() {
+    void shouldThrowIfDescriptionTooLong() throws Exception {
         String longDesc = "a".repeat(201);
         Film film = new Film(null, "Valid", longDesc, LocalDate.of(2000, 1, 1), 120L);
-        ValidationException ex = assertThrows(ValidationException.class, () -> controller.create(film));
-        assertTrue(ex.getMessage().contains("длина описания"));
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.description")
+                        .value("Максимальная длина описания - 200 символов"));
     }
 
+    // Дата релиза слишком старая
     @Test
-    void shouldThrowIfReleaseDateTooOld() {
+    void shouldThrowIfReleaseDateTooOld() throws Exception {
         Film film = new Film(null, "Valid", "Desc", LocalDate.of(1800, 1, 1), 120L);
-        ValidationException ex = assertThrows(ValidationException.class, () -> controller.create(film));
-        assertTrue(ex.getMessage().contains("Дата релиза"));
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.releaseDate")
+                        .value("Дата релиза — не раньше 28 декабря 1895 года"));
     }
 
+    // Длительность неположительная
     @Test
-    void shouldThrowIfDurationNonPositive() {
+    void shouldThrowIfDurationNonPositive() throws Exception {
         Film film = new Film(null, "Valid", "Desc", LocalDate.of(2000, 1, 1), 0L);
-        ValidationException ex = assertThrows(ValidationException.class, () -> controller.create(film));
-        assertTrue(ex.getMessage().contains("Продолжительность"));
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.duration")
+                        .value("Продолжительность фильма должна быть положительным числом"));
     }
 }

@@ -1,11 +1,12 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +17,6 @@ import java.util.Map;
 public class UserController {
 
     private final Map<Long, User> users = new HashMap<>();
-    private long idCounter = 1;
 
     @GetMapping
     public Collection<User> findAll() {
@@ -25,14 +25,20 @@ public class UserController {
     }
 
     @PostMapping
-    public User create(@RequestBody User user) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public User create(@Valid @RequestBody User user) {
         log.info("Попытка создать пользователя: {}", user);
 
-        try {
-            validateUser(user);
-        } catch (ValidationException e) {
-            log.warn("Ошибка валидации при создании пользователя: {}", e.getMessage());
-            throw e;
+        // Проверка уникальности email
+        if (users.values().stream().anyMatch(u -> u.getEmail().equals(user.getEmail()))) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Этот email уже используется"
+            );
+        }
+
+        // Подставляем login как name, если имя не указано
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
 
         user.setId(getNextId());
@@ -42,81 +48,40 @@ public class UserController {
     }
 
     @PutMapping
-    public User update(@RequestBody User newUser) {
-        log.info("Попытка обновить пользователя: {}", newUser);
+    public User update(@Valid @RequestBody User user) {
+        log.info("Попытка обновить пользователя: {}", user);
 
-        if (newUser.getId() == null) {
-            log.warn("Обновление отклонено: ID не указан");
-            throw new ValidationException("ID должен быть указан");
+        if (user.getId() == null || !users.containsKey(user.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Пользователь с ID = " + user.getId() + " не найден"
+            );
         }
 
-        User oldUser = users.get(newUser.getId());
-        if (oldUser == null) {
-            log.warn("Обновление отклонено: пользователь с ID = {} не найден", newUser.getId());
-            throw new ValidationException("Пользователь с таким ID не найден");
+        // Проверка уникальности email (кроме текущего пользователя)
+        if (users.values().stream()
+                .anyMatch(u -> !u.getId().equals(user.getId())
+                        && u.getEmail().equals(user.getEmail()))) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Этот email уже используется"
+            );
         }
 
-        try {
-            validateUser(newUser, true); // режим обновления
-        } catch (ValidationException e) {
-            log.warn("Ошибка валидации при обновлении пользователя: {}", e.getMessage());
-            throw e;
-        }
-
-        if (newUser.getEmail() != null) {
-            oldUser.setEmail(newUser.getEmail());
-        }
-
-        if (newUser.getLogin() != null) {
-            oldUser.setLogin(newUser.getLogin());
-        }
-
-        if (newUser.getName() != null && !newUser.getName().isBlank()) {
-            oldUser.setName(newUser.getName());
-        }
-
-        if (newUser.getBirthday() != null) {
-            oldUser.setBirthday(newUser.getBirthday());
-        }
-
-        log.info("Пользователь с ID = {} успешно обновлён", newUser.getId());
-        return oldUser;
-    }
-
-    private void validateUser(User user) {
-        validateUser(user, false);
-    }
-
-    private void validateUser(User user, boolean isUpdate) {
-        // Email
-        if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
-            throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ '@'");
-        }
-        for (User existing : users.values()) {
-            if (!isUpdate || !existing.getId().equals(user.getId())) {
-                if (user.getEmail().equals(existing.getEmail())) {
-                    throw new ValidationException("Этот email уже используется");
-                }
-            }
-        }
-
-        // Login
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин не может быть пустым и содержать пробелы");
-        }
-
-        // Имя по умолчанию
-        if (!isUpdate && (user.getName() == null || user.getName().isBlank())) {
+        // Подставляем login как name, если имя не указано
+        if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
 
-        // Дата рождения
-        if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Дата рождения не может быть в будущем");
-        }
+        users.put(user.getId(), user);
+        log.info("Пользователь с ID = {} успешно обновлён", user.getId());
+        return user;
     }
 
     public Long getNextId() {
-        return idCounter++;
+        long currentMaxId = users.keySet()
+                .stream()
+                .mapToLong(id -> id)
+                .max()
+                .orElse(0);
+        return ++currentMaxId;
     }
 }
