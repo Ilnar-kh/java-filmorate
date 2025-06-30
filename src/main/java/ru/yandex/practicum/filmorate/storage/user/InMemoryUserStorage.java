@@ -2,7 +2,9 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -52,7 +54,7 @@ public class InMemoryUserStorage implements UserStorage {
         if (users.values().stream()
                 .anyMatch(u -> !u.getId().equals(user.getId())
                         && u.getEmail().equals(user.getEmail()))) {
-            throw new ValidationException("Этот email уже используется");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Этот email уже используется");
         }
 
         // Подставляем login как name, если имя не указано

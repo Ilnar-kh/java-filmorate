@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +16,10 @@ import java.util.Set;
 @Data
 public class Film {
 
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private final Set<Long> likes = new HashSet<>();
 
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long id;
 
     @NotBlank(message = "Название не может быть пустым")
