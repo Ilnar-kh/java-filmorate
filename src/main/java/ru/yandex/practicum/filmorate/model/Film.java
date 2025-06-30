@@ -2,14 +2,20 @@ package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import ru.yandex.practicum.filmorate.validation.ValidReleaseDate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
+@Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class Film {
+
+    private final Set<Long> likes = new HashSet<>();
 
     private Long id;
 
@@ -27,4 +33,19 @@ public class Film {
     @NotNull(message = "Продолжительность не может быть пустой")
     @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private Long duration;
+
+    public int getLikes() {
+        log.info("Получено количество лайков: {}", likes.size());
+        return likes.size();
+    }
+
+    public void addLike(Long userId) {
+        log.info("Пользователь с ID = {} поставил лайк фильму", userId);
+        likes.add(userId);
+    }
+
+    public void removeLike(Long userId) {
+        log.info("Пользователь с ID = {} удалил лайк у фильма", userId);
+        likes.remove(userId);
+    }
 }
