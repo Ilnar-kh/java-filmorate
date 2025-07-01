@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
@@ -9,6 +11,7 @@ import ru.yandex.practicum.filmorate.service.FilmService;
 import java.util.Collection;
 import java.util.List;
 
+@Validated
 @Slf4j
 @RestController
 @RequestMapping("/films")
@@ -39,13 +42,16 @@ public class FilmController {
     }
 
     @PutMapping("/{id}/like/{userId}")
-    public void putLike(@PathVariable Long id, @PathVariable Long userId) {
+    public void putLike(@PathVariable @Positive(message = "id фильма должно быть положительным") Long id,
+                        @PathVariable @Positive(message = "id пользователя должно быть положительным") Long userId) {
         log.info("PUT /films/{}/like/{} — пользователь ставит лайк", id, userId);
         filmService.putLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    public void deleteLike(@PathVariable Long id, @PathVariable Long userId) {
+    public void deleteLike(
+            @PathVariable @Positive(message = "ID фильма должно быть положительным") Long id,
+            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long userId) {
         log.info("DELETE /films/{}/like/{} — пользователь удаляет лайк", id, userId);
         filmService.deleteLike(id, userId);
     }

@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -41,13 +42,16 @@ public class UserController {
     }
 
     @PutMapping("/{id}/friends/{friendId}")
-    public void addFriend(@PathVariable Long id, @PathVariable Long friendId) {
+    public void addFriend(
+            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long id,
+            @PathVariable @Positive(message = "ID друга должно быть положительным") Long friendId) {
         log.info("PUT /users/{}/friends/{} — добавление друга", id, friendId);
         userService.addFriend(id, friendId);
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    public void removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
+    public void removeFriend(@PathVariable @Positive(message = "ID пользователя должно быть положительным") Long id,
+                             @PathVariable @Positive(message = "ID друга должно быть положительным") Long friendId) {
         log.info("DELETE /users/{}/friends/{} — удаление из друзей", id, friendId);
         userService.deleteFriend(id, friendId);
     }
