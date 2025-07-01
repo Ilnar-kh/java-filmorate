@@ -18,10 +18,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class UserControllerTest {
+
     @Autowired
-    MockMvc mockMvc;
+    private MockMvc mockMvc;
+
     @Autowired
-    ObjectMapper mapper;
+    private ObjectMapper mapper;
 
     @Test
     void createValidUser() throws Exception {

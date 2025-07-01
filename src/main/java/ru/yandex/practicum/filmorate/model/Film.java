@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -16,10 +16,8 @@ import java.util.Set;
 @Data
 public class Film {
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private final Set<Long> likes = new HashSet<>();
+    private Set<Long> likes = new HashSet<>();
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long id;
 
     @NotBlank(message = "Название не может быть пустым")
@@ -50,5 +48,27 @@ public class Film {
     public void removeLike(Long userId) {
         log.info("Пользователь с ID = {} удалил лайк у фильма", userId);
         likes.remove(userId);
+    }
+
+    public void setLikes(Set<Long> likes) {
+        this.likes = likes;
+    }
+
+    @JsonSetter("likes")
+    public void setLikes(int ignored) {
+        this.likes = new HashSet<>();
+    }
+
+    public Film(Long id,
+                String name,
+                String description,
+                LocalDate releaseDate,
+                long duration) {
+        this.likes = new HashSet<>();     // сразу пустое множество
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.releaseDate = releaseDate;
+        this.duration = duration;
     }
 }

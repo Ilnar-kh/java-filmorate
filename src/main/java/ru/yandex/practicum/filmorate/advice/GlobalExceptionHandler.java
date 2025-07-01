@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
 import java.util.Map;
@@ -44,12 +43,5 @@ public class GlobalExceptionHandler {
     public Map<String, String> onUnhandledError(Throwable exception) {
         return Map.of("error", "Внутренняя ошибка сервера: " + exception.getMessage());
     }
-
-    @ExceptionHandler(ResponseStatusException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> onResponseStatus(ResponseStatusException ex) {
-        return Map.of("error", ex.getReason());
-    }
-
 }
 

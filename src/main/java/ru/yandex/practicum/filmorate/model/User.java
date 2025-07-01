@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,7 +20,7 @@ import java.util.Set;
 @Data
 public class User {
 
-    private final Set<Long> friends = new HashSet<>();
+    private Set<Long> friends = new HashSet<>();
 
     private Long id;
 
@@ -54,5 +56,37 @@ public class User {
     public void removeFriend(Long friendId) {
         log.info("Пользователь с ID = {} удалил друга с ID = {}", id, friendId);
         friends.remove(friendId);
+    }
+
+    public User(Long id,
+                String email,
+                String login,
+                String name,
+                LocalDate birthday) {
+        this.id = id;
+        this.email = email;
+        this.login = login;
+        this.name = name;
+        this.birthday = birthday;
+    }
+
+    public void setFriends(Set<Long> friends) {
+        this.friends = friends;
+    }
+
+    @JsonSetter("friends")
+    public void setFriendsFromJson(Object raw) {
+        if (raw instanceof Collection<?>) {
+            Set<Long> set = new HashSet<>();
+            for (Object o : (Collection<?>) raw) {
+                if (o instanceof Number) {
+                    set.add(((Number) o).longValue());
+                }
+            }
+            this.friends = set;
+        } else {
+            // пришло число, null или ещё что-то — просто оставляем пустое множество
+            this.friends = new HashSet<>();
+        }
     }
 }
