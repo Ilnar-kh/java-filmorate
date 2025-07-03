@@ -35,6 +35,12 @@ public class Film {
     @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private Long duration;
 
+    @NotEmpty(message = "У фильма должен быть хотя бы один жанр")
+    private Set<Genre> genres = new HashSet<>();
+
+    @NotNull(message = "Рейтинг MPA не может быть пустым")
+    private MpaRating mpa;
+
     public int getLikes() {
         log.info("Получено количество лайков: {}", likes.size());
         return likes.size();

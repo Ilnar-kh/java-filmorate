@@ -10,15 +10,15 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class User {
+
+    private Map<Long, FriendshipStatus> friendshipStatuses = new HashMap<>();
 
     private Set<Long> friends = new HashSet<>();
 
@@ -50,11 +50,15 @@ public class User {
 
     public void addFriend(Long friendId) {
         log.info("Пользователь с ID = {} добавил друга с ID = {}", id, friendId);
+        // помечаем в статусах как CONFIRMED
+        friendshipStatuses.put(friendId, FriendshipStatus.CONFIRMED);
+        // и в списке ID
         friends.add(friendId);
     }
 
     public void removeFriend(Long friendId) {
         log.info("Пользователь с ID = {} удалил друга с ID = {}", id, friendId);
+        friendshipStatuses.remove(friendId);
         friends.remove(friendId);
     }
 
