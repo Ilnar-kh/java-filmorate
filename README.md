@@ -55,6 +55,7 @@ film_id, genre_id
 =
 Получить все фильмы с жанрами и рейтингами
 =
+```sql
 SELECT f.id, f.name, f.description, f.release_date, f.duration,
        r.code AS mpa_rating,
        g.name AS genre
@@ -62,3 +63,4 @@ FROM films f
 LEFT JOIN mpa_ratings r ON f.mpa_rating = r.code
 LEFT JOIN film_genres fg ON fg.film_id = f.id
 LEFT JOIN genres g ON fg.genre_id = g.id;
+```
