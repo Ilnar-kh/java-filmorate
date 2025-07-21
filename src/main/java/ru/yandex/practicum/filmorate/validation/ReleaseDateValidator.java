@@ -12,7 +12,7 @@ public class ReleaseDateValidator
 
     @Override
     public boolean isValid(LocalDate date, ConstraintValidatorContext ctx) {
-        if (date == null) return true;  // @NotNull обрабатывает null
+        if (date == null) return true;
         return !date.isBefore(EARLIEST);
     }
 }

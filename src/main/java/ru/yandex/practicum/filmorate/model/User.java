@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 public class User {
 
     private Map<Long, FriendshipStatus> friendshipStatuses = new HashMap<>();
@@ -50,9 +52,7 @@ public class User {
 
     public void addFriend(Long friendId) {
         log.info("Пользователь с ID = {} добавил друга с ID = {}", id, friendId);
-        // помечаем в статусах как CONFIRMED
         friendshipStatuses.put(friendId, FriendshipStatus.CONFIRMED);
-        // и в списке ID
         friends.add(friendId);
     }
 
@@ -74,10 +74,6 @@ public class User {
         this.birthday = birthday;
     }
 
-    public void setFriends(Set<Long> friends) {
-        this.friends = friends;
-    }
-
     @JsonSetter("friends")
     public void setFriendsFromJson(Object raw) {
         if (raw instanceof Collection<?>) {
@@ -89,7 +85,6 @@ public class User {
             }
             this.friends = set;
         } else {
-            // пришло число, null или ещё что-то — просто оставляем пустое множество
             this.friends = new HashSet<>();
         }
     }

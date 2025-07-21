@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
-import java.util.Collection;
 import java.util.List;
 
 @Validated
@@ -25,40 +24,53 @@ public class FilmController {
 
     @PostMapping
     public Film create(@Valid @RequestBody Film film) {
-        log.info("POST /films — создание фильма: {}", film);
+        log.info("POST  /films — создание фильма: {}", film);
         return filmService.create(film);
     }
 
     @PutMapping
-    public Film update(@Valid @RequestBody Film film) {
-        log.info("PUT /films — обновление фильма: {}", film);
+    public Film update(@RequestBody Film film) {
+        log.info("PUT   /films — обновление фильма: {}", film);
         return filmService.update(film);
     }
 
     @GetMapping
-    public Collection<Film> findAll() {
-        log.info("GET /films — запрос всех фильмов");
-        return filmService.findAll();
+    public List<Film> findAll() {
+        log.info("GET   /films — запрос всех фильмов");
+        return (List<Film>) filmService.findAll();
     }
 
-    @PutMapping("/{id}/like/{userId}")
-    public void putLike(@PathVariable @Positive(message = "id фильма должно быть положительным") Long id,
-                        @PathVariable @Positive(message = "id пользователя должно быть положительным") Long userId) {
-        log.info("PUT /films/{}/like/{} — пользователь ставит лайк", id, userId);
-        filmService.putLike(id, userId);
+    @GetMapping("/{filmId}")
+    public Film findById(
+            @PathVariable @Positive(message = "ID фильма должно быть положительным") Long filmId
+    ) {
+        log.info("GET   /films/{} — запрос фильма по id", filmId);
+        return filmService.findById(filmId);
     }
 
-    @DeleteMapping("/{id}/like/{userId}")
+    @PutMapping("/{filmId}/like/{userId}")
+    public void putLike(
+            @PathVariable @Positive(message = "ID фильма должно быть положительным") Long filmId,
+            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long userId
+    ) {
+        log.info("PUT   /films/{}/like/{} — пользователь ставит лайк", filmId, userId);
+        filmService.putLike(filmId, userId);
+    }
+
+    @DeleteMapping("/{filmId}/like/{userId}")
     public void deleteLike(
-            @PathVariable @Positive(message = "ID фильма должно быть положительным") Long id,
-            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long userId) {
-        log.info("DELETE /films/{}/like/{} — пользователь удаляет лайк", id, userId);
-        filmService.deleteLike(id, userId);
+            @PathVariable @Positive(message = "ID фильма должно быть положительным") Long filmId,
+            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long userId
+    ) {
+        log.info("DELETE /films/{}/like/{} — пользователь удаляет лайк", filmId, userId);
+        filmService.deleteLike(filmId, userId);
     }
 
     @GetMapping("/popular")
-    public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
-        log.info("GET /films/popular?count={} — запрос популярных фильмов", count);
+    public List<Film> getPopularFilms(
+            @RequestParam(name = "count", defaultValue = "10") @Positive(message = "count должен быть положительным") int count
+    ) {
+        log.info("GET   /films/popular?count={} — запрос популярных фильмов", count);
         return filmService.getPopularFilms(count);
     }
 }
