@@ -2,65 +2,63 @@
 Template repository for Filmorate project.
 
 Ссылка на ER-диаграмму
-https://disk.yandex.ru/i/yXMJB9fRaTJkiQ
+https://disk.yandex.ru/i/fQjk87Ew0wjjww
 
 Пояснение к схеме базы данных
-=
 
-Таблица users
-=
-Содержит данные пользователей:
-id — уникальный идентификатор
-email, login, name — контактные и идентификационные данные
-birthday — дата рождения
+Таблицы и их назначение:
 
-Таблица user_friends
-=
-Представляет отношения дружбы между пользователями:
-requester_id — пользователь, отправивший запрос
-addressee_id — пользователь, получивший запрос
+users
 
-status_code — статус дружбы (например, CONFIRMED, UNCONFIRMED)
+Хранит информацию о пользователях:
+	•	id — уникальный идентификатор.
+	•	email — email (уникальный, обязательный).
+	•	login — логин (обязательный).
+	•	name — имя пользователя.
+	•	birthday — дата рождения.
 
-created_at — дата создания связи
+films
 
-Таблица friendship_statuses
-=
-Справочник возможных статусов дружбы:
-UNCONFIRMED — неподтверждено
-CONFIRMED — подтверждено
+Хранит фильмы:
+	•	id — уникальный идентификатор.
+	•	name — название фильма.
+	•	description — описание.
+	•	release_date — дата релиза.
+	•	duration — продолжительность в минутах.
+	•	mpa_id — ссылка на таблицу рейтингов mpa.
 
-Таблица films
-=
-Содержит информацию о фильмах:
-id, name, description, release_date, duration
-mpa_rating — внешний ключ на таблицу рейтингов MPA
+mpa
 
-Таблица mpa_ratings
-=
-Справочник возрастных рейтингов:
-G, PG, PG-13, R, NC-17
+Справочник рейтингов MPA:
+	•	id — уникальный идентификатор.
+	•	name — название рейтинга (G, PG-13, R и т.д.).
 
-Таблица genres
-=
-Справочник жанров фильмов:
-id, name
+genres
 
-Таблица film_genres
-=
-Связующая таблица между фильмами и жанрами (многие-ко-многим):
-film_id, genre_id
+Справочник жанров:
+	•	id — уникальный идентификатор.
+	•	name — название жанра (комедия, боевик и т.д.).
 
-Пример запроса: 
-=
-Получить все фильмы с жанрами и рейтингами
-=
-```sql
-SELECT f.id, f.name, f.description, f.release_date, f.duration,
-       r.code AS mpa_rating,
-       g.name AS genre
-FROM films f
-LEFT JOIN mpa_ratings r ON f.mpa_rating = r.code
-LEFT JOIN film_genres fg ON fg.film_id = f.id
-LEFT JOIN genres g ON fg.genre_id = g.id;
-```
+film_genres
+
+Связующая таблица многие-ко-многим между films и genres.
+
+film_likes
+
+Таблица лайков:
+	•	Связывает пользователей (user_id) и фильмы (film_id).
+	•	Первичный ключ: (film_id, user_id).
+
+friendship_statuses
+
+Справочник статусов дружбы:
+	•	code — уникальный код.
+	•	description — текстовое описание (например, «запрос отправлен», «подтверждено» и т.д.).
+
+user_friends
+
+Хранит информацию о дружбе между пользователями:
+	•	requester_id — инициатор дружбы.
+	•	addressee_id — получатель.
+	•	status_code — текущий статус (ссылается на friendship_statuses).
+	•	created_at — дата создания запроса.
