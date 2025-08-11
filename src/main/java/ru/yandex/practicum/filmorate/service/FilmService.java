@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -44,13 +45,21 @@ public class FilmService {
                     (film.getMpa() != null ? film.getMpa().getId() : "null") + " does not exist.");
         }
 
-        if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
-                if (!genreStorage.existsById(genre.getId())) {
-                    throw new NotFoundException("Жанр с id " + genre.getId() + " не существует.");
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            List<Integer> genreIds = film.getGenres().stream()
+                    .map(Genre::getId)
+                    .distinct()
+                    .toList();
+
+            Set<Integer> existingIds = genreStorage.findExistingIds(genreIds);
+
+            for (Integer id : genreIds) {
+                if (!existingIds.contains(id)) {
+                    throw new NotFoundException("Жанр с id " + id + " не существует.");
                 }
             }
         }
+
         Film savedFilm = filmStorage.create(film);
         filmStorage.saveFilmGenres(savedFilm);
         return savedFilm;

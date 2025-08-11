@@ -12,5 +12,5 @@ public interface GenreStorage {
 
     Set<Genre> getGenresByFilmId(Long filmId);
 
-    boolean existsById(int id);
+    Set<Integer> findExistingIds(List<Integer> ids);
 }

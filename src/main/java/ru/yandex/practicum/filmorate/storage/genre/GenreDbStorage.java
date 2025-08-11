@@ -51,10 +51,16 @@ public class GenreDbStorage implements GenreStorage {
         return new HashSet<>(jdbc.query(sql, this::mapRowToGenre, filmId));
     }
 
-    public boolean existsById(int id) {
-        String sql = "SELECT COUNT(*) FROM genres WHERE id = ?";
-        Integer count = jdbc.queryForObject(sql, Integer.class, id);
-        return count != null && count > 0;
+    public Set<Integer> findExistingIds(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Set.of();
+        }
+
+        String placeholders = String.join(",", java.util.Collections.nCopies(ids.size(), "?"));
+        String sql = "SELECT id FROM genres WHERE id IN (" + placeholders + ")";
+        List<Integer> foundIds = jdbc.queryForList(sql, Integer.class, ids.toArray());
+        return new HashSet<>(foundIds);
+
     }
 }
 
