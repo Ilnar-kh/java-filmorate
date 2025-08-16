@@ -14,6 +14,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 public class Film {
 
     private Set<Long> likes = new HashSet<>();
@@ -28,16 +29,22 @@ public class Film {
     private String description;
 
     @NotNull(message = "Дата релиза не может быть пустой")
-    @ValidReleaseDate           // ← ваша собственная проверка
+    @ValidReleaseDate
     private LocalDate releaseDate;
 
     @NotNull(message = "Продолжительность не может быть пустой")
     @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private Long duration;
 
+    private Set<Genre> genres = new HashSet<>();
+
+    @NotNull(message = "Рейтинг MPA не может быть пустым")
+    private MpaRating mpa;
+
     public int getLikes() {
-        log.info("Получено количество лайков: {}", likes.size());
-        return likes.size();
+        int size = likes != null ? likes.size() : 0;
+        log.info("Получено количество лайков: {}", size);
+        return size;
     }
 
     public void addLike(Long userId) {
@@ -50,13 +57,9 @@ public class Film {
         likes.remove(userId);
     }
 
+    @JsonSetter("likes")
     public void setLikes(Set<Long> likes) {
         this.likes = likes;
-    }
-
-    @JsonSetter("likes")
-    public void setLikes(int ignored) {
-        this.likes = new HashSet<>();
     }
 
     public Film(Long id,
@@ -64,7 +67,7 @@ public class Film {
                 String description,
                 LocalDate releaseDate,
                 long duration) {
-        this.likes = new HashSet<>();     // сразу пустое множество
+        this.likes = new HashSet<>();
         this.id = id;
         this.name = name;
         this.description = description;
