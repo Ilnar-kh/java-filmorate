@@ -21,4 +21,6 @@ public interface FilmStorage {
     void saveFilmGenres(Film film);
 
     List<Film> getPopularFilms(int count);
+
+    int removeById(Long filmId);
 }

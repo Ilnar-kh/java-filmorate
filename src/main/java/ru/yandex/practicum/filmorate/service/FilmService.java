@@ -93,4 +93,8 @@ public class FilmService {
     public List<Film> getPopularFilms(int count) {
         return filmStorage.getPopularFilms(count);
     }
+
+    public int removeById(Long filmId) {
+        return filmStorage.removeById(filmId);
+    }
 }
