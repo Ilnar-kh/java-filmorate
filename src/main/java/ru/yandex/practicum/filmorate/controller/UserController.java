@@ -9,6 +9,8 @@ import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Feed;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.FeedService;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.RecommendationService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
@@ -21,10 +23,12 @@ public class UserController {
 
     private final UserService userService;
     private final FeedService feedService;
+    private final RecommendationService recommendationService;
 
-    public UserController(UserService userService, FeedService feedService) {
+    public UserController(UserService userService, FeedService feedService, RecommendationService recommendationService) {
         this.userService = userService;
         this.feedService = feedService;
+        this.recommendationService = recommendationService;
     }
 
     @GetMapping
@@ -96,6 +100,11 @@ public class UserController {
     public User findById(@PathVariable @Positive Long id) {
         log.info("GET /users/{} - получение пользователя по id", id);
         return userService.findById(id);
+    }
+
+    @GetMapping("/{id}/recommendations")
+    public List<Film> getRecommendations(@PathVariable Long id) {
+        return recommendationService.getRecommendations(id);
     }
 
     private void checkUsersExist(Long id, Long otherId) {
