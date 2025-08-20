@@ -3,17 +3,19 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.service.DirectorService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
 @RequestMapping("/directors")
-@Validated
 public class DirectorController {
 
     private final DirectorService directorService;
@@ -51,5 +53,13 @@ public class DirectorController {
     public void deleteDirector(@PathVariable Long id) {
         log.info("DELETE /directors/{} — удаление режиссера", id);
         directorService.deleteDirector(id);
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNotFoundException(NotFoundException e) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", e.getMessage());
+        return response;
     }
 }

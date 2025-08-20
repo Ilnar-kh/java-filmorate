@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.director;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -28,8 +29,12 @@ public class DirectorDbStorage implements DirectorStorage {
 
     @Override
     public Director getDirectorById(Long id) {
-        String sql = "SELECT * FROM directors WHERE director_id = ?";
-        return jdbcTemplate.queryForObject(sql, this::mapRowToDirector, id);
+        try {
+            String sql = "SELECT * FROM directors WHERE director_id = ?";
+            return jdbcTemplate.queryForObject(sql, this::mapRowToDirector, id);
+        } catch (EmptyResultDataAccessException e) {
+            return null; // Возвращаем null, чтобы сервис мог выбросить NotFoundException
+        }
     }
 
     @Override

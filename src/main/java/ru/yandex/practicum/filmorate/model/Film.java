@@ -7,7 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import ru.yandex.practicum.filmorate.validation.ValidReleaseDate;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -41,6 +43,8 @@ public class Film {
     @NotNull(message = "Рейтинг MPA не может быть пустым")
     private MpaRating mpa;
 
+    private List<Director> directors = new ArrayList<>();
+
     public int getLikes() {
         int size = likes != null ? likes.size() : 0;
         log.info("Получено количество лайков: {}", size);
@@ -73,5 +77,6 @@ public class Film {
         this.description = description;
         this.releaseDate = releaseDate;
         this.duration = duration;
+        this.directors = new ArrayList<>();
     }
 }

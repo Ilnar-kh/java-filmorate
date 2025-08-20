@@ -230,4 +230,82 @@ public class FilmDbStorage implements FilmStorage {
 
         return result;
     }
+
+    @Override
+    public List<Film> getFilmsByDirectorSortedByYear(Long directorId) {
+        String sql = """
+                SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name
+                FROM films f
+                JOIN film_directors fd ON f.id = fd.film_id
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                WHERE fd.director_id = ?
+                ORDER BY f.release_date
+                """;
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, directorId);
+
+        if (!films.isEmpty()) {
+            // Загрузка жанров для всех фильмов
+            Set<Long> filmIds = films.stream()
+                    .map(Film::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+
+            Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
+
+            for (Film film : films) {
+                film.setGenres(genresByFilm.getOrDefault(
+                        film.getId(),
+                        java.util.Collections.emptySet()
+                ));
+            }
+        }
+
+        return films;
+    }
+
+    @Override
+    public List<Film> getFilmsByDirectorSortedByLikes(Long directorId) {
+        String sql = """
+                SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name, COUNT(fl.user_id) AS likes
+                FROM films f
+                JOIN film_directors fd ON f.id = fd.film_id
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_likes fl ON f.id = fl.film_id
+                WHERE fd.director_id = ?
+                GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name
+                ORDER BY likes DESC
+                """;
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, directorId);
+
+        if (!films.isEmpty()) {
+            // Загрузка жанров для всех фильмов
+            Set<Long> filmIds = films.stream()
+                    .map(Film::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+
+            Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
+
+            for (Film film : films) {
+                film.setGenres(genresByFilm.getOrDefault(
+                        film.getId(),
+                        java.util.Collections.emptySet()
+                ));
+            }
+        }
+
+        return films;
+    }
+
+    @Override
+    public void addFilmDirector(Long filmId, Long directorId) {
+        String sql = "INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)";
+        jdbcTemplate.update(sql, filmId, directorId);
+    }
+
+    @Override
+    public void removeFilmDirectors(Long filmId) {
+        String sql = "DELETE FROM film_directors WHERE film_id = ?";
+        jdbcTemplate.update(sql, filmId);
+    }
 }
