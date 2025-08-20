@@ -8,7 +8,7 @@ import ru.yandex.practicum.filmorate.validation.ValidReleaseDate;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -19,7 +19,7 @@ import java.util.Set;
 @Builder
 public class Film {
 
-    private Set<Long> likes = new HashSet<>();
+    private Set<Long> likes = new LinkedHashSet<>();
 
     private Long id;
 
@@ -38,7 +38,7 @@ public class Film {
     @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private Long duration;
 
-    private Set<Genre> genres = new HashSet<>();
+    private Set<Genre> genres = new LinkedHashSet<>();
 
     @NotNull(message = "Рейтинг MPA не может быть пустым")
     private MpaRating mpa;
@@ -71,12 +71,13 @@ public class Film {
                 String description,
                 LocalDate releaseDate,
                 long duration) {
-        this.likes = new HashSet<>();
+        this.likes = new LinkedHashSet<>();
         this.id = id;
         this.name = name;
         this.description = description;
         this.releaseDate = releaseDate;
         this.duration = duration;
+        this.genres = new LinkedHashSet<>();
         this.directors = new ArrayList<>();
     }
 }
