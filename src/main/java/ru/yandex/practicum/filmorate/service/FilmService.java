@@ -97,4 +97,13 @@ public class FilmService {
     public int removeById(Long filmId) {
         return filmStorage.removeById(filmId);
     }
+
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        // проверка
+        userStorage.findById(userId);
+        userStorage.findById(friendId);
+
+        log.debug("Service: getCommonFilms userId={}, friendId={}", userId, friendId);
+        return filmStorage.findCommonFilms(userId, friendId);
+    }
 }

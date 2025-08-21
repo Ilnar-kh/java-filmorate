@@ -76,6 +76,12 @@ public class FilmController {
         return filmService.getPopularFilms(count);
     }
 
+    @GetMapping("/common")
+    public List<Film> getCommonFilms(@RequestParam Long userId, @RequestParam Long friendId) {
+        log.info("GET   /films/common?userId={}&friendId={} — запрос общих фильмов", userId, friendId);
+        return filmService.getCommonFilms(userId, friendId);
+    }
+
     @DeleteMapping("/{id}")
     public void removeById(@PathVariable @Positive(message = "ID фильма должно быть положительным")
                            Long id) {

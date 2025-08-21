@@ -23,4 +23,6 @@ public interface FilmStorage {
     List<Film> getPopularFilms(int count);
 
     int removeById(Long filmId);
+
+    List<Film> findCommonFilms(Long userId, Long friendId);
 }
