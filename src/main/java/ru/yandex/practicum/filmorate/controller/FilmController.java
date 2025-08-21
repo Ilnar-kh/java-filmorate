@@ -83,7 +83,8 @@ public class FilmController {
     ) {
         log.info("GET /films/director/{}?sortBy={} — получение фильмов режиссера с сортировкой", directorId, sortBy);
         return filmService.getFilmsByDirectorSorted(directorId, sortBy);
-
+    }
+    
     @DeleteMapping("/{id}")
     public void removeById(@PathVariable @Positive(message = "ID фильма должно быть положительным")
                            Long id) {
