@@ -97,15 +97,11 @@ public class FilmDbStorage implements FilmStorage {
             Map<Long, Set<Genre>> genresByFilm =
                     loadGenresByFilmIds(java.util.Set.of(film.getId()));
 
-        film.setGenres(new LinkedHashSet<>(
-                genresByFilm.getOrDefault(film.getId(),
-                        java.util.Collections.emptySet())
-        ));
-        return film;
-            film.setGenres(new java.util.HashSet<>(
+            film.setGenres(new LinkedHashSet<>(
                     genresByFilm.getOrDefault(film.getId(),
                             java.util.Collections.emptySet())
             ));
+
             return film;
         } catch (EmptyResultDataAccessException e) {
             throw new NotFoundException("Фильм с id=" + filmId + " не найден");
@@ -126,7 +122,6 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private Film mapRowToFilm(ResultSet resultSet, int rowNumber) throws SQLException {
-
         MpaRating mpa = null;
         int mpaId = resultSet.getInt("mpa_id");
         if (!resultSet.wasNull()) {
@@ -222,7 +217,7 @@ public class FilmDbStorage implements FilmStorage {
                 .map(id -> "?")
                 .collect(java.util.stream.Collectors.joining(","));
 
-        // Добавляем сортировку по жанрам в том порядке, в котором они были добавлены
+        // Добавляем ORDER BY для сортировки жанров в порядке их добавления
         String sql = """
                 SELECT fg.film_id, g.id, g.name
                 FROM film_genres fg
@@ -235,7 +230,7 @@ public class FilmDbStorage implements FilmStorage {
             long filmId = rs.getLong("film_id");
             Genre genre = new Genre(rs.getInt("id"), rs.getString("name"));
             // Используем LinkedHashSet для сохранения порядка
-            result.computeIfAbsent(filmId, k -> new LinkedHashSet<>()).add(genre);
+            result.computeIfAbsent(filmId, k -> new java.util.LinkedHashSet<>()).add(genre);
         });
 
         return result;
@@ -317,6 +312,8 @@ public class FilmDbStorage implements FilmStorage {
     public void removeFilmDirectors(Long filmId) {
         String sql = "DELETE FROM film_directors WHERE film_id = ?";
         jdbcTemplate.update(sql, filmId);
+    }
+
     public int removeById(Long filmId) {
         return jdbcTemplate.update("DELETE FROM films WHERE id = ?", filmId);
     }

@@ -15,9 +15,9 @@ import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
 
 @Service
 @Slf4j
@@ -54,9 +54,12 @@ public class FilmService {
         }
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            List<Integer> genreIds = film.getGenres().stream()
+            // Сохраняем жанры в том же порядке, но убираем дубликаты
+            Set<Genre> uniqueGenres = new LinkedHashSet<>(film.getGenres());
+            film.setGenres(uniqueGenres);
+
+            List<Integer> genreIds = uniqueGenres.stream()
                     .map(Genre::getId)
-                    .distinct()
                     .toList();
 
             Set<Integer> existingIds = genreStorage.findExistingIds(genreIds);
@@ -82,6 +85,12 @@ public class FilmService {
     public Film update(Film film) {
         // Проверка существования фильма
         findById(film.getId());
+
+        // Сохраняем жанры в том же порядке, но убираем дубликаты
+        if (film.getGenres() != null) {
+            Set<Genre> uniqueGenres = new LinkedHashSet<>(film.getGenres());
+            film.setGenres(uniqueGenres);
+        }
 
         Film updatedFilm = filmStorage.update(film);
         filmStorage.saveFilmGenres(updatedFilm);
