@@ -79,6 +79,21 @@ public class UserController {
         return (List<User>) userService.getCommonFriends(id, otherId);
     }
 
+    @DeleteMapping("/{id}")
+    public void removeById(@PathVariable @Positive(message = "ID пользователя должно быть положительным")
+                           Long id) {
+        if (userService.removeById(id) == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь с id=" + id + " не найден");
+        }
+        log.info("DELETE /users/{} - удаление пользователя по id", id);
+    }
+
+    @GetMapping("/{id}")
+    public User findById(@PathVariable @Positive Long id) {
+        log.info("GET /users/{} - получение пользователя по id", id);
+        return userService.findById(id);
+    }
+
     private void checkUsersExist(Long id, Long otherId) {
         if (userService.findById(id) == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь с id=" + id + " не найден");

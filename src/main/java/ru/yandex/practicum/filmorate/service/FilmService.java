@@ -168,4 +168,8 @@ public class FilmService {
 
         return films;
     }
+
+    public int removeById(Long filmId) {
+        return filmStorage.removeById(filmId);
+    }
 }

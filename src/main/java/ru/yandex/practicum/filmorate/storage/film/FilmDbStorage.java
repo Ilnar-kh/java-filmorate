@@ -1,10 +1,12 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
@@ -89,16 +91,25 @@ public class FilmDbStorage implements FilmStorage {
                 LEFT JOIN mpa m ON m.id = f.mpa_id
                 WHERE f.id = ?
                 """;
-        Film film = jdbcTemplate.queryForObject(sql, this::mapRowToFilm, filmId);
+        try {
+            Film film = jdbcTemplate.queryForObject(sql, this::mapRowToFilm, filmId);
 
-        Map<Long, Set<Genre>> genresByFilm =
-                loadGenresByFilmIds(java.util.Set.of(film.getId()));
+            Map<Long, Set<Genre>> genresByFilm =
+                    loadGenresByFilmIds(java.util.Set.of(film.getId()));
 
         film.setGenres(new LinkedHashSet<>(
                 genresByFilm.getOrDefault(film.getId(),
                         java.util.Collections.emptySet())
         ));
         return film;
+            film.setGenres(new java.util.HashSet<>(
+                    genresByFilm.getOrDefault(film.getId(),
+                            java.util.Collections.emptySet())
+            ));
+            return film;
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
+        }
     }
 
 
@@ -306,5 +317,7 @@ public class FilmDbStorage implements FilmStorage {
     public void removeFilmDirectors(Long filmId) {
         String sql = "DELETE FROM film_directors WHERE film_id = ?";
         jdbcTemplate.update(sql, filmId);
+    public int removeById(Long filmId) {
+        return jdbcTemplate.update("DELETE FROM films WHERE id = ?", filmId);
     }
 }

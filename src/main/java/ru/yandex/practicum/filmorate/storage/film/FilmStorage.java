@@ -28,4 +28,6 @@ public interface FilmStorage {
     void addFilmDirector(Long filmId, Long directorId);
 
     void removeFilmDirectors(Long filmId);
+
+    int removeById(Long filmId);
 }
