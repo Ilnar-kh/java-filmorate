@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS user_friends (
     status_code  VARCHAR(50) NOT NULL,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (requester_id, addressee_id),
-    FOREIGN KEY (requester_id)   REFERENCES users(id),
-    FOREIGN KEY (addressee_id)   REFERENCES users(id),
+    FOREIGN KEY (requester_id)   REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (addressee_id)   REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (status_code)    REFERENCES friendship_statuses(code)
 );
 
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS film_genres (
     film_id  INT NOT NULL,
     genre_id INT NOT NULL,
     PRIMARY KEY (film_id, genre_id),
-    FOREIGN KEY (film_id)  REFERENCES films(id),
+    FOREIGN KEY (film_id)  REFERENCES films(id) ON DELETE CASCADE,
     FOREIGN KEY (genre_id) REFERENCES genres(id)
 );
 

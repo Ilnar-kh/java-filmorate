@@ -134,4 +134,8 @@ public class UserDbStorage implements UserStorage {
                         "WHERE uf1.requester_id = ? AND uf2.requester_id = ?)";
         return jdbc.query(sql, this::mapRowToUser, userId, otherUserId);
     }
+
+    public int removeById(Long userId) {
+        return jdbc.update("DELETE FROM users WHERE id = ?", userId);
+    }
 }

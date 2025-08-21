@@ -59,4 +59,9 @@ public class UserService {
         log.info("Запрошен список общих друзей пользователей {} и {}", userId, otherId);
         return userStorage.getCommonFriends(userId, otherId);
     }
+
+    public int removeById(Long userId) {
+        log.info("Запрос на удаление пользователя {}", userId);
+        return userStorage.removeById(userId);
+    }
 }

@@ -3,8 +3,10 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
@@ -72,5 +74,14 @@ public class FilmController {
     ) {
         log.info("GET   /films/popular?count={} — запрос популярных фильмов", count);
         return filmService.getPopularFilms(count);
+    }
+
+    @DeleteMapping("/{id}")
+    public void removeById(@PathVariable @Positive(message = "ID фильма должно быть положительным")
+                           Long id) {
+        if (filmService.removeById(id) == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм с id=" + id + " не найден");
+        }
+        log.info("DELETE /films/{} - удаление фильма по id", id);
     }
 }
