@@ -5,6 +5,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.util.List;
 
 public interface FilmStorage {
+
     Film create(Film film);
 
     Film update(Film film);
@@ -30,4 +31,6 @@ public interface FilmStorage {
     void removeFilmDirectors(Long filmId);
 
     int removeById(Long filmId);
+
+    List<Film> findCommonFilms(Long userId, Long friendId);
 }
