@@ -90,3 +90,18 @@ CREATE TABLE IF NOT EXISTS review_likes (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_films_name ON films(name);
 CREATE INDEX IF NOT EXISTS idx_genres_name ON genres(name);
+
+-- Создание таблицы режиссеров
+CREATE TABLE IF NOT EXISTS directors (
+    director_id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL
+);
+
+-- Создание таблицы связи фильмов и режиссеров
+CREATE TABLE IF NOT EXISTS film_directors (
+    film_id INTEGER NOT NULL,
+    director_id INTEGER NOT NULL,
+    PRIMARY KEY (film_id, director_id),
+    FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE,
+    FOREIGN KEY (director_id) REFERENCES directors(director_id) ON DELETE CASCADE
+);
