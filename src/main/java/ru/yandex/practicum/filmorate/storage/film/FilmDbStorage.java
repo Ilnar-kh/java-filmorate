@@ -317,4 +317,52 @@ public class FilmDbStorage implements FilmStorage {
     public int removeById(Long filmId) {
         return jdbcTemplate.update("DELETE FROM films WHERE id = ?", filmId);
     }
+
+    @Override
+    public List<Film> findCommonFilms(Long userId, Long friendId) {
+        String sql = """
+                SELECT f.id,
+                f.name,
+                f.description,
+                f.release_date,
+                f.duration,
+                f.mpa_id,
+                m.name AS mpa_name
+                FROM films f
+                JOIN mpa m ON f.mpa_id = m.id
+                JOIN (
+                     SELECT film_id
+                     FROM film_likes
+                     WHERE user_id IN (?, ?)
+                     GROUP BY film_id
+                     HAVING COUNT(user_id) = 2
+                ) common_likes ON common_likes.film_id = f.id
+                JOIN (
+                     SELECT film_id, COUNT(*) AS total_likes
+                     FROM film_likes
+                     GROUP BY film_id
+                ) fl ON fl.film_id = f.id
+                ORDER BY fl.total_likes DESC
+                """;
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId, friendId);
+
+        if (films.isEmpty()) return films;
+
+        // одним запросом тянем жанры для всех фильмов
+        Set<Long> filmIds = films.stream()
+                                 .map(Film::getId)
+                                 .collect(java.util.stream.Collectors.toSet());
+
+        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
+
+        // расставляем жанры без дополнительных запросов
+        for (Film film : films) {
+            film.setGenres(genresByFilm.getOrDefault(
+                    film.getId(),
+                    java.util.Collections.emptySet()
+            ));
+        }
+        return films;
+    }
 }

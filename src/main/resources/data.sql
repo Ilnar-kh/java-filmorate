@@ -1,3 +1,14 @@
+-- Очищаем пользовательские данные ПЕРЕД вставкой справочников
+DELETE FROM film_likes;
+DELETE FROM user_friends;
+DELETE FROM film_genres;
+DELETE FROM films;
+DELETE FROM users;
+
+-- Сбрасываем автоинкремент для таблиц
+ALTER TABLE films ALTER COLUMN id RESTART WITH 1;
+ALTER TABLE users ALTER COLUMN id RESTART WITH 1;
+
 -- Статусы дружбы
 MERGE INTO friendship_statuses (code, description) VALUES
   ('PENDING',  'Запрос отправлен'),
