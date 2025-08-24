@@ -56,7 +56,6 @@ public class UserController {
         log.info("PUT /users/{}/friends/{} — добавление друга", id, friendId);
         checkUsersExist(id, friendId);
         userService.addFriend(id, friendId);
-        feedService.addFriend(id, friendId);
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
@@ -66,7 +65,6 @@ public class UserController {
         log.info("DELETE /users/{}/friends/{} — удаление из друзей", id, friendId);
         checkUsersExist(id, friendId);
         userService.deleteFriend(id, friendId);
-        feedService.deleteFriend(id, friendId);
     }
 
     @GetMapping("/{id}/friends")

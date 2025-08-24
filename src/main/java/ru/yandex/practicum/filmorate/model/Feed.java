@@ -11,5 +11,5 @@ public class Feed {
     private String eventType;
     private String operation;
     private int eventId;
-    private Integer entityId;
+    private int entityId;
 }

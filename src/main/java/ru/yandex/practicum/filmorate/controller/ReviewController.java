@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Review;
-import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.ReviewService;
 
 import java.util.List;
@@ -15,13 +14,10 @@ import java.util.List;
 @AllArgsConstructor
 public class ReviewController {
     private final ReviewService reviewService;
-    private final FeedService feedService;
 
     @PostMapping
     public Review create(@Valid @RequestBody Review review) {
-        Review rev = reviewService.create(review);
-        feedService.addReview(rev);
-        return rev;
+        return reviewService.create(review);
     }
 
     @GetMapping("/{id}")
@@ -31,14 +27,11 @@ public class ReviewController {
 
     @PutMapping
     public Review update(@Valid @RequestBody Review review) {
-        Review rev = reviewService.update(review);
-        feedService.updateReview(rev);
-        return rev;
+        return reviewService.update(review);
     }
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable @Positive Long id) {
-        feedService.deleteReview(id, reviewService.findById(id).getUserId());
         reviewService.delete(id);
     }
 
