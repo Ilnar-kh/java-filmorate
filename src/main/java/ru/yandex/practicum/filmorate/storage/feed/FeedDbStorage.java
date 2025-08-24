@@ -59,12 +59,7 @@ public class FeedDbStorage implements FeedStorage {
         String sqlQuery =
                 "insert into feeds(userId, timestamp, eventType, operation, entityId)" +
                         " values(?,?, ?, ?,?)";
-        jdbcTemplate.update(sqlQuery
-                , userId
-                , timestamp.getTime()
-                , "REVIEW"
-                , "REMOVE"
-                , reviewId);
+        jdbcTemplate.update(sqlQuery, userId, timestamp.getTime(), "REVIEW", "REMOVE", reviewId);
 
     }
 
@@ -88,12 +83,7 @@ public class FeedDbStorage implements FeedStorage {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         String sqlQuery = "insert into feeds(userId, timestamp, eventType, operation, entityId)" +
                 "values(?, ?, ?, ?, ?)";
-        jdbcTemplate.update(sqlQuery
-                , userId
-                , timestamp.getTime()
-                , "LIKE"
-                , action
-                , filmId);
+        jdbcTemplate.update(sqlQuery, userId, timestamp.getTime(), "LIKE", action, filmId);
     }
 
     private void addOrUpdateReview(Review review, String action) {
@@ -101,12 +91,7 @@ public class FeedDbStorage implements FeedStorage {
         String sqlQuery =
                 "insert into feeds(userId, timestamp, eventType, operation, entityId)" +
                         " values(?,?, ?, ?,?)";
-        jdbcTemplate.update(sqlQuery
-                , review.getUserId()
-                , timestamp.getTime()
-                , "REVIEW"
-                , action
-                , review.getId());
+        jdbcTemplate.update(sqlQuery, review.getUserId(), timestamp.getTime(), "REVIEW", action, review.getId());
     }
 
     private void addOrRemoveFriend(long userId, long friendId, String action) throws NotFoundException {
@@ -115,12 +100,7 @@ public class FeedDbStorage implements FeedStorage {
                 "insert into feeds(userId, timestamp, eventType, operation, entityId)\n" +
                         "values(?, ?, ?, ?, ?)";
         try {
-            jdbcTemplate.update(sqlQuery
-                    , userId
-                    , timestamp.getTime()
-                    , "FRIEND"
-                    , action
-                    , friendId);
+            jdbcTemplate.update(sqlQuery, userId, timestamp.getTime(), "FRIEND", action, friendId);
         } catch (DataAccessException e) {
             throw new NotFoundException(e.getMessage());
         }
