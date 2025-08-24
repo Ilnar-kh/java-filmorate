@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.model.Feed;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
@@ -18,9 +20,11 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final FeedService feedService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, FeedService feedService) {
         this.userService = userService;
+        this.feedService = feedService;
     }
 
     @GetMapping
@@ -52,6 +56,7 @@ public class UserController {
         log.info("PUT /users/{}/friends/{} — добавление друга", id, friendId);
         checkUsersExist(id, friendId);
         userService.addFriend(id, friendId);
+        feedService.addFriend(id, friendId);
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
@@ -61,6 +66,7 @@ public class UserController {
         log.info("DELETE /users/{}/friends/{} — удаление из друзей", id, friendId);
         checkUsersExist(id, friendId);
         userService.deleteFriend(id, friendId);
+        feedService.deleteFriend(id, friendId);
     }
 
     @GetMapping("/{id}/friends")
@@ -101,5 +107,14 @@ public class UserController {
         if (userService.findById(otherId) == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь с id=" + otherId + " не найден");
         }
+    }
+
+    @GetMapping("/{id}/feed")
+    public Collection<Feed> getUserFeed(@PathVariable Long id) {
+        log.info("Запрос ленты событий для пользователя с ID: {}", id);
+        if (userService.findById(id) == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь с id=" + id + " не найден");
+        }
+        return feedService.feeds(id);
     }
 }

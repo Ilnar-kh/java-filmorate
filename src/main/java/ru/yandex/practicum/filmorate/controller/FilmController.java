@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.List;
@@ -19,9 +20,11 @@ import java.util.List;
 public class FilmController {
 
     private final FilmService filmService;
+    private final FeedService feedService;
 
-    public FilmController(FilmService filmService) {
+    public FilmController(FilmService filmService, FeedService feedService) {
         this.filmService = filmService;
+        this.feedService = feedService;
     }
 
     @PostMapping
@@ -57,6 +60,7 @@ public class FilmController {
     ) {
         log.info("PUT   /films/{}/like/{} — пользователь ставит лайк", filmId, userId);
         filmService.putLike(filmId, userId);
+        feedService.likeFromUser(filmId, userId);
     }
 
     @DeleteMapping("/{filmId}/like/{userId}")
@@ -66,6 +70,7 @@ public class FilmController {
     ) {
         log.info("DELETE /films/{}/like/{} — пользователь удаляет лайк", filmId, userId);
         filmService.deleteLike(filmId, userId);
+        feedService.unlikeFromUser(filmId, userId);
     }
 
     @GetMapping("/popular")
