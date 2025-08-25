@@ -7,6 +7,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
@@ -17,6 +18,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 public class FilmDbStorage implements FilmStorage {
@@ -207,38 +209,47 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
-        // 1) Берём только ID популярных фильмов с учётом фильтров
+        // 1. Получаем ID популярных фильмов
         List<Long> topIds = fetchPopularIds(count, genreId, year);
-        if (topIds.isEmpty()) return java.util.Collections.emptyList();
+        if (topIds.isEmpty()) return Collections.emptyList();
 
-        // 2) Грузим сами фильмы (без лайков), вместе с названием MPA
-        String placeholders = topIds.stream().map(id -> "?")
-                .collect(java.util.stream.Collectors.joining(","));
+        // 2. Загружаем фильмы
+        String placeholders = topIds.stream()
+                .map(id -> "?")
+                .collect(Collectors.joining(","));
 
         String filmSql = """
-                SELECT f.id,
-                       f.name,
-                       f.description,
-                       f.release_date,
-                       f.duration,
-                       f.mpa_id,
-                       m.name AS mpa_name
-                FROM films f
-                LEFT JOIN mpa m ON m.id = f.mpa_id
-                WHERE f.id IN (""" + placeholders + ")";
+            SELECT f.id,
+                   f.name,
+                   f.description,
+                   f.release_date,
+                   f.duration,
+                   f.mpa_id,
+                   m.name AS mpa_name
+            FROM films f
+            LEFT JOIN mpa m ON m.id = f.mpa_id
+            WHERE f.id IN (""" + placeholders + ")";
 
         List<Film> films = jdbcTemplate.query(filmSql, this::mapRowToFilm, topIds.toArray());
 
-        // Сохраняем порядок, полученный на шаге 1 (по количеству лайков)
-        java.util.Map<Long, Integer> rank = new java.util.HashMap<>();
-        for (int i = 0; i < topIds.size(); i++) rank.put(topIds.get(i), i);
-        films.sort(java.util.Comparator.comparingInt(f -> rank.getOrDefault(f.getId(), Integer.MAX_VALUE)));
+        // Сохраняем порядок
+        Map<Long, Integer> rank = new HashMap<>();
+        for (int i = 0; i < topIds.size(); i++) {
+            rank.put(topIds.get(i), i);
+        }
+        films.sort(Comparator.comparingInt(f -> rank.getOrDefault(f.getId(), Integer.MAX_VALUE)));
 
-        // 3) Одним запросом подгружаем жанры и расставляем
-        java.util.Set<Long> ids = films.stream().map(Film::getId).collect(java.util.stream.Collectors.toSet());
-        java.util.Map<Long, java.util.Set<Genre>> genresByFilm = loadGenresByFilmIds(ids);
+        // 3. Подгружаем жанры
+        Set<Long> ids = films.stream().map(Film::getId).collect(Collectors.toSet());
+        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(ids);
         for (Film f : films) {
-            f.setGenres(genresByFilm.getOrDefault(f.getId(), java.util.Collections.emptySet()));
+            f.setGenres(genresByFilm.getOrDefault(f.getId(), Collections.emptySet()));
+        }
+
+        // 4. Подгружаем режиссёров
+        Map<Long, Set<Director>> directorsByFilm = loadDirectorsByFilmIds(ids);
+        for (Film f : films) {
+            f.setDirectors((List<Director>) directorsByFilm.getOrDefault(f.getId(), Collections.emptySet()));
         }
 
         return films;
@@ -246,12 +257,12 @@ public class FilmDbStorage implements FilmStorage {
 
     private List<Long> fetchPopularIds(int count, Integer genreId, Integer year) {
         StringBuilder sql = new StringBuilder("""
-                SELECT f.id
-                FROM films f
-                LEFT JOIN film_likes fl ON fl.film_id = f.id
-                """);
+            SELECT f.id
+            FROM films f
+            LEFT JOIN film_likes fl ON fl.film_id = f.id
+            """);
 
-        java.util.List<Object> params = new java.util.ArrayList<>();
+        List<Object> params = new ArrayList<>();
         boolean whereAdded = false;
 
         if (genreId != null) {
@@ -273,40 +284,64 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         sql.append("""
-                GROUP BY f.id
-                ORDER BY COUNT(fl.user_id) DESC, f.id
-                LIMIT ?
-                """);
+            GROUP BY f.id
+            ORDER BY COUNT(fl.user_id) DESC, f.id
+            LIMIT ?
+            """);
         params.add(count);
 
-        return jdbcTemplate.query(sql.toString(),
+        return jdbcTemplate.query(
+                sql.toString(),
                 (rs, rn) -> rs.getLong(1),
-                params.toArray());
+                params.toArray()
+        );
     }
 
     private Map<Long, Set<Genre>> loadGenresByFilmIds(Set<Long> filmIds) {
         if (filmIds == null || filmIds.isEmpty()) {
-            return java.util.Collections.emptyMap();
+            return Collections.emptyMap();
         }
 
         String placeholders = filmIds.stream()
                 .map(id -> "?")
-                .collect(java.util.stream.Collectors.joining(","));
+                .collect(Collectors.joining(","));
 
-        // Добавляем ORDER BY для сортировки жанров в порядке их добавления
         String sql = """
-                SELECT fg.film_id, g.id, g.name
-                FROM film_genres fg
-                JOIN genres g ON g.id = fg.genre_id
-                WHERE fg.film_id IN (""" + placeholders + ")";
+            SELECT fg.film_id, g.id, g.name
+            FROM film_genres fg
+            JOIN genres g ON g.id = fg.genre_id
+            WHERE fg.film_id IN (""" + placeholders + ")";
 
-        Map<Long, Set<Genre>> result = new java.util.HashMap<>();
-
+        Map<Long, Set<Genre>> result = new HashMap<>();
         jdbcTemplate.query(sql, filmIds.toArray(), rs -> {
             long filmId = rs.getLong("film_id");
             Genre genre = new Genre(rs.getInt("id"), rs.getString("name"));
-            // Используем LinkedHashSet для сохранения порядка
-            result.computeIfAbsent(filmId, k -> new java.util.LinkedHashSet<>()).add(genre);
+            result.computeIfAbsent(filmId, k -> new LinkedHashSet<>()).add(genre);
+        });
+
+        return result;
+    }
+
+    private Map<Long, Set<Director>> loadDirectorsByFilmIds(Set<Long> filmIds) {
+        if (filmIds == null || filmIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        String placeholders = filmIds.stream()
+                .map(id -> "?")
+                .collect(Collectors.joining(","));
+
+        String sql = """
+            SELECT fd.film_id, d.id, d.name
+            FROM film_directors fd
+            JOIN directors d ON d.id = fd.director_id
+            WHERE fd.film_id IN (""" + placeholders + ")";
+
+        Map<Long, Set<Director>> result = new HashMap<>();
+        jdbcTemplate.query(sql, filmIds.toArray(), rs -> {
+            long filmId = rs.getLong("film_id");
+            Director director = new Director(rs.getLong("id"), rs.getString("name"));
+            result.computeIfAbsent(filmId, k -> new LinkedHashSet<>()).add(director);
         });
 
         return result;
