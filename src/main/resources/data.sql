@@ -42,3 +42,14 @@ MERGE INTO genres (id, name) VALUES
 (5, 'Документальный'),
 (6, 'Боевик');
 
+-- Пользователь с id=1
+INSERT INTO users (id, email, login, name, birthday)
+VALUES (1, 'user1@mail.com', 'user1', 'User One', '1990-01-01');
+
+-- Фильм с id=3
+INSERT INTO films (id, name, description, release_date, duration, mpa_id)
+VALUES (3, 'The Matrix', 'Classic sci-fi action', '1999-03-31', 136, 1);
+
+-- Добавляем жанры для фильма 3
+INSERT INTO film_genres (film_id, genre_id) VALUES (3, 1);
+INSERT INTO film_genres (film_id, genre_id) VALUES (3, 2);
