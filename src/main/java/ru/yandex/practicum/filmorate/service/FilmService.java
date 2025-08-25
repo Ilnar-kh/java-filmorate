@@ -95,7 +95,7 @@ public class FilmService {
         }
 
         Film updatedFilm = filmStorage.update(film);
-        filmStorage.saveFilmGenres(film);
+        filmStorage.saveFilmGenres(updatedFilm);
 
         // Обновление директоров
         filmStorage.removeFilmDirectors(film.getId());
