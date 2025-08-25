@@ -14,10 +14,12 @@ import java.util.Collection;
 public class UserService {
 
     private final UserStorage userStorage;
+    private final FeedService feedService;
 
     @Autowired
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage, FeedService feedService) {
         this.userStorage = userStorage;
+        this.feedService = feedService;
     }
 
     public User create(User user) {
@@ -43,11 +45,13 @@ public class UserService {
     public void addFriend(Long userId, Long friendId) {
         log.info("Пользователь {} добавляет в друзья пользователя {}", userId, friendId);
         userStorage.addFriend(userId, friendId);
+        feedService.addFriend(userId, friendId);
     }
 
     public void deleteFriend(Long userId, Long friendId) {
         log.info("Пользователь {} удаляет из друзей пользователя {}", userId, friendId);
         userStorage.removeFriend(userId, friendId);
+        feedService.deleteFriend(userId, friendId);
     }
 
     public Collection<User> getFriends(Long userId) {
@@ -58,5 +62,10 @@ public class UserService {
     public Collection<User> getCommonFriends(Long userId, Long otherId) {
         log.info("Запрошен список общих друзей пользователей {} и {}", userId, otherId);
         return userStorage.getCommonFriends(userId, otherId);
+    }
+
+    public int removeById(Long userId) {
+        log.info("Запрос на удаление пользователя {}", userId);
+        return userStorage.removeById(userId);
     }
 }

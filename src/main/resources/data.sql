@@ -1,3 +1,24 @@
+-- Очистка всех таблиц в правильном порядке (с учетом foreign keys)
+--DELETE FROM review_likes;
+--DELETE FROM reviews;
+--DELETE FROM film_likes;
+--DELETE FROM user_friends;
+--DELETE FROM film_genres;
+--DELETE FROM film_directors;
+--DELETE FROM users;
+--DELETE FROM directors;
+
+-- Очистка справочных таблиц (если нужно)
+-- DELETE FROM genres;
+-- DELETE FROM mpa;
+-- DELETE FROM friendship_statuses;
+
+-- Сброс автоинкремента для основных таблиц
+--ALTER TABLE films ALTER COLUMN id RESTART WITH 1;
+--ALTER TABLE users ALTER COLUMN id RESTART WITH 1;
+--ALTER TABLE directors ALTER COLUMN director_id RESTART WITH 1;
+--ALTER TABLE reviews ALTER COLUMN id RESTART WITH 1;
+
 -- Статусы дружбы
 MERGE INTO friendship_statuses (code, description) VALUES
   ('PENDING',  'Запрос отправлен'),
@@ -20,4 +41,3 @@ MERGE INTO genres (id, name) VALUES
 (4, 'Триллер'),
 (5, 'Документальный'),
 (6, 'Боевик');
-
