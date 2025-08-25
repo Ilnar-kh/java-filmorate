@@ -207,4 +207,15 @@ public class TestDataSetup {
                 }
         );
     }
+
+    /* ==================== Добавление режиссеров ==================== */
+    public void insertDirectors(int count) {
+        for (int i = 1; i <= count; i++) {
+            jdbcTemplate.update("INSERT INTO directors (director_id, name) VALUES (?, ?)", i, "Director " + i);
+        }
+    }
+
+    public void insertFilmDirector(int filmId, int directorId) {
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)", filmId, directorId);
+    }
 }

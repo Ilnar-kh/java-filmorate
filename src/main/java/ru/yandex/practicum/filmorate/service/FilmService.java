@@ -61,8 +61,8 @@ public class FilmService {
             film.setGenres(uniqueGenres);
 
             List<Integer> genreIds = uniqueGenres.stream()
-                    .map(Genre::getId)
-                    .toList();
+                                                 .map(Genre::getId)
+                                                 .toList();
 
             Set<Integer> existingIds = genreStorage.findExistingIds(genreIds);
 
@@ -192,6 +192,29 @@ public class FilmService {
         userStorage.findById(friendId);
 
         log.debug("Service: getCommonFilms userId={}, friendId={}", userId, friendId);
-        return filmStorage.findCommonFilms(userId, friendId);
+
+        List<Film> films = filmStorage.findCommonFilms(userId, friendId);
+        // Загрузка директоров для всех фильмов
+        for (Film film : films) {
+            film.setDirectors(directorStorage.getFilmDirectors(film.getId().intValue()));
+        }
+        return films;
+    }
+
+    public List<Film> searchFilms(String query, String by) {
+        List<Film> films = switch (by) {
+            case "title" -> filmStorage.searchByTitle(query);
+            case "director" -> filmStorage.searchByDirector(query);
+            case "title,director", "director,title" -> filmStorage.searchByTitleAndDirector(query);
+            default -> throw new IllegalArgumentException(
+                    "Parameter 'by' must be 'title', 'director', or both separated by comma."
+            );
+        };
+
+        // Загрузка режиссеров для всех фильмов
+        for (Film film : films) {
+            film.setDirectors(directorStorage.getFilmDirectors(film.getId().intValue()));
+        }
+        return films;
     }
 }

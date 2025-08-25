@@ -33,4 +33,10 @@ public interface FilmStorage {
     int removeById(Long filmId);
 
     List<Film> findCommonFilms(Long userId, Long friendId);
+
+    List<Film> searchByTitle(String query);
+
+    List<Film> searchByDirector(String query);
+
+    List<Film> searchByTitleAndDirector(String query);
 }

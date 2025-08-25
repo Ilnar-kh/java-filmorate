@@ -27,6 +27,7 @@ public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
 
     public FilmDbStorage(JdbcTemplate jdbcTemplate) {
+
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -94,6 +95,7 @@ public class FilmDbStorage implements FilmStorage {
         try {
             Film film = jdbcTemplate.queryForObject(sql, this::mapRowToFilm, filmId);
 
+            // загрузка жанров
             Map<Long, Set<Genre>> genresByFilm =
                     loadGenresByFilmIds(java.util.Set.of(film.getId()));
 
@@ -131,14 +133,14 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         Film film = Film.builder()
-                .id(resultSet.getLong("id"))
-                .name(resultSet.getString("name"))
-                .description(resultSet.getString("description"))
-                .releaseDate(resultSet.getDate("release_date").toLocalDate())
-                .duration(resultSet.getLong("duration"))
-                .mpa(mpa)
-                .genres(new LinkedHashSet<>()) // Используем LinkedHashSet
-                .build();
+                        .id(resultSet.getLong("id"))
+                        .name(resultSet.getString("name"))
+                        .description(resultSet.getString("description"))
+                        .releaseDate(resultSet.getDate("release_date").toLocalDate())
+                        .duration(resultSet.getLong("duration"))
+                        .mpa(mpa)
+                        .genres(new LinkedHashSet<>()) // Используем LinkedHashSet
+                        .build();
 
         return film;
     }
@@ -153,9 +155,9 @@ public class FilmDbStorage implements FilmStorage {
         List<Genre> genres = new ArrayList<>(film.getGenres());
         // Удаляем дубликаты, сохраняя порядок первого вхождения
         List<Genre> uniqueGenres = genres.stream()
-                .filter(genre -> genre != null && genre.getId() != null)
-                .distinct()
-                .toList();
+                                         .filter(genre -> genre != null && genre.getId() != null)
+                                         .distinct()
+                                         .toList();
 
         String insertSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
         jdbcTemplate.batchUpdate(
@@ -192,8 +194,8 @@ public class FilmDbStorage implements FilmStorage {
 
         // одним запросом тянем жанры для всех фильмов
         Set<Long> filmIds = films.stream()
-                .map(Film::getId)
-                .collect(java.util.stream.Collectors.toSet());
+                                 .map(Film::getId)
+                                 .collect(java.util.stream.Collectors.toSet());
 
         Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -214,8 +216,8 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         String placeholders = filmIds.stream()
-                .map(id -> "?")
-                .collect(java.util.stream.Collectors.joining(","));
+                                     .map(id -> "?")
+                                     .collect(java.util.stream.Collectors.joining(","));
 
         // Добавляем ORDER BY для сортировки жанров в порядке их добавления
         String sql = """
@@ -252,8 +254,8 @@ public class FilmDbStorage implements FilmStorage {
         if (!films.isEmpty()) {
             // Загрузка жанров для всех фильмов
             Set<Long> filmIds = films.stream()
-                    .map(Film::getId)
-                    .collect(java.util.stream.Collectors.toSet());
+                                     .map(Film::getId)
+                                     .collect(java.util.stream.Collectors.toSet());
 
             Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -286,8 +288,8 @@ public class FilmDbStorage implements FilmStorage {
         if (!films.isEmpty()) {
             // Загрузка жанров для всех фильмов
             Set<Long> filmIds = films.stream()
-                    .map(Film::getId)
-                    .collect(java.util.stream.Collectors.toSet());
+                                     .map(Film::getId)
+                                     .collect(java.util.stream.Collectors.toSet());
 
             Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -347,6 +349,139 @@ public class FilmDbStorage implements FilmStorage {
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId, friendId);
 
+        if (films.isEmpty()) return films;
+
+        // одним запросом тянем жанры для всех фильмов
+        Set<Long> filmIds = films.stream()
+                                 .map(Film::getId)
+                                 .collect(java.util.stream.Collectors.toSet());
+
+        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
+
+        // расставляем жанры без дополнительных запросов
+        for (Film film : films) {
+            film.setGenres(genresByFilm.getOrDefault(
+                    film.getId(),
+                    java.util.Collections.emptySet()
+            ));
+        }
+        return films;
+    }
+
+    @Override
+    public List<Film> searchByTitle(String query) {
+        String sql = """
+                SELECT f.id,
+                f.name,
+                f.description,
+                f.release_date,
+                f.duration,
+                f.mpa_id,
+                m.name AS mpa_name,
+                fl.total_likes
+                FROM films f
+                JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN (
+                       SELECT film_id, COUNT(*) AS total_likes
+                       FROM film_likes
+                       GROUP BY film_id
+                ) fl ON fl.film_id = f.id
+                WHERE LOWER(f.name) LIKE ?
+                ORDER BY fl.total_likes DESC
+                """;
+        String likeQuery = "%" + query.toLowerCase() + "%";
+
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, likeQuery);
+
+        if (films.isEmpty()) return films;
+
+        // одним запросом тянем жанры для всех фильмов
+        Set<Long> filmIds = films.stream()
+                                 .map(Film::getId)
+                                 .collect(java.util.stream.Collectors.toSet());
+
+        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
+
+        // расставляем жанры без дополнительных запросов
+        for (Film film : films) {
+            film.setGenres(genresByFilm.getOrDefault(
+                    film.getId(),
+                    java.util.Collections.emptySet()
+            ));
+        }
+        return films;
+    }
+
+    @Override
+    public List<Film> searchByDirector(String query) {
+        String sql = """
+                SELECT DISTINCT f.id,
+                f.name,
+                f.description,
+                f.release_date,
+                f.duration,
+                f.mpa_id,
+                m.name AS mpa_name,
+                fl.total_likes
+                FROM films f
+                JOIN mpa m ON f.mpa_id = m.id
+                JOIN film_directors fd ON f.id = fd.film_id
+                JOIN directors d ON fd.director_id = d.director_id
+                LEFT JOIN (
+                       SELECT film_id, COUNT(*) AS total_likes
+                       FROM film_likes
+                       GROUP BY film_id
+                ) fl ON fl.film_id = f.id
+                WHERE LOWER(d.name) LIKE ?
+                ORDER BY fl.total_likes DESC
+                """;
+        String likeQuery = "%" + query.toLowerCase() + "%";
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, likeQuery);
+        if (films.isEmpty()) return films;
+
+        // одним запросом тянем жанры для всех фильмов
+        Set<Long> filmIds = films.stream()
+                                 .map(Film::getId)
+                                 .collect(java.util.stream.Collectors.toSet());
+
+        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
+
+        // расставляем жанры без дополнительных запросов
+        for (Film film : films) {
+            film.setGenres(genresByFilm.getOrDefault(
+                    film.getId(),
+                    java.util.Collections.emptySet()
+            ));
+        }
+        return films;
+    }
+
+    @Override
+    public List<Film> searchByTitleAndDirector(String query) {
+        String sql = """
+                SELECT DISTINCT f.id,
+                f.name,
+                f.description,
+                f.release_date,
+                f.duration,
+                f.mpa_id,
+                m.name AS mpa_name,
+                fl.total_likes
+                FROM films f
+                JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_directors fd ON f.id = fd.film_id
+                LEFT JOIN directors d ON fd.director_id = d.director_id
+                LEFT JOIN (
+                       SELECT film_id, COUNT(*) AS total_likes
+                       FROM film_likes
+                       GROUP BY film_id
+                ) fl ON fl.film_id = f.id
+                WHERE LOWER(f.name) LIKE ? OR LOWER(d.name) LIKE ?
+                ORDER BY fl.total_likes DESC
+                """;
+        String likeQuery = "%" + query.toLowerCase() + "%";
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, likeQuery, likeQuery);
         if (films.isEmpty()) return films;
 
         // одним запросом тянем жанры для всех фильмов

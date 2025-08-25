@@ -5,12 +5,21 @@ import jakarta.validation.constraints.Positive;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.List;
+import java.util.Set;
 
 @Validated
 @Slf4j
@@ -98,5 +107,23 @@ public class FilmController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм с id=" + id + " не найден");
         }
         log.info("DELETE /films/{} - удаление фильма по id", id);
+    }
+
+    @GetMapping("/search")
+    public List<Film> searchFilms(@RequestParam String query,
+                                  @RequestParam String by) {
+        String byFields = by.trim().toLowerCase();
+        log.info("GET /films/search?query={}&by={}", query, byFields);
+
+        Set<String> allowed = Set.of("title", "director", "title,director", "director,title");
+
+        if (!allowed.contains(byFields)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Parameter 'by' must be 'title', 'director', or 'title,director'"
+            );
+        }
+
+        return filmService.searchFilms(query.trim(), byFields);
     }
 }
