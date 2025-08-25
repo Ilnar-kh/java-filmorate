@@ -95,12 +95,12 @@ public class FilmService {
         }
 
         Film updatedFilm = filmStorage.update(film);
-        filmStorage.saveFilmGenres(updatedFilm);
+        filmStorage.saveFilmGenres(film);
 
         // Обновление директоров
-        filmStorage.removeFilmDirectors(updatedFilm.getId());
+        filmStorage.removeFilmDirectors(film.getId());
         if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
-            updateFilmDirectors(updatedFilm);
+            updateFilmDirectors(film);
         }
 
         return findById(updatedFilm.getId());
