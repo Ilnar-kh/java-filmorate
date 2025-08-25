@@ -4,10 +4,13 @@ DELETE FROM user_friends;
 DELETE FROM film_genres;
 DELETE FROM films;
 DELETE FROM users;
+DELETE FROM FEEDS;
 
 -- Сбрасываем автоинкремент для таблиц
 ALTER TABLE films ALTER COLUMN id RESTART WITH 1;
 ALTER TABLE users ALTER COLUMN id RESTART WITH 1;
+ALTER TABLE users ALTER COLUMN id RESTART WITH 1;
+ALTER TABLE FEEDS ALTER COLUMN ENTITYID RESTART WITH 1;
 
 -- Статусы дружбы
 MERGE INTO friendship_statuses (code, description) VALUES

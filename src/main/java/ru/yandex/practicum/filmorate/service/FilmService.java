@@ -29,6 +29,7 @@ public class FilmService {
     private final GenreStorage genreStorage;
     private final DirectorStorage directorStorage;
     private final DirectorService directorService;
+    private final FeedService feedService;
 
     @Autowired
     public FilmService(
@@ -37,7 +38,7 @@ public class FilmService {
             @Qualifier("mpaDbStorage") MpaStorage mpaStorage,
             @Qualifier("genreDbStorage") GenreStorage genreStorage,
             DirectorStorage directorStorage,
-            DirectorService directorService
+            DirectorService directorService, FeedService feedService
     ) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
@@ -45,6 +46,7 @@ public class FilmService {
         this.genreStorage = genreStorage;
         this.directorStorage = directorStorage;
         this.directorService = directorService;
+        this.feedService = feedService;
     }
 
     public Film create(Film film) {
@@ -138,12 +140,14 @@ public class FilmService {
         userStorage.findById(userId);
         filmStorage.findById(filmId);
         filmStorage.addLike(filmId, userId);
+        feedService.likeFromUser(filmId, userId);
     }
 
     public void deleteLike(Long filmId, Long userId) {
         userStorage.findById(userId);
         filmStorage.findById(filmId);
         filmStorage.removeLike(filmId, userId);
+        feedService.unlikeFromUser(filmId, userId);
     }
 
     public List<Film> getPopularFilms(int count) {

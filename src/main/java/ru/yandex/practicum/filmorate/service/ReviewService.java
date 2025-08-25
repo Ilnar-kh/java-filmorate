@@ -19,12 +19,14 @@ public class ReviewService {
     private final ReviewStorage reviewStorage;
     private final UserStorage userStorage;
     private final FilmStorage filmStorage;
+    private final FeedService feedService;
 
     public Review create(Review review) {
         userStorage.findById(review.getUserId());
         filmStorage.findById(review.getFilmId());
-
-        return reviewStorage.create(review);
+        Review rev = reviewStorage.create(review);
+        feedService.addReview(rev);
+        return rev;
     }
 
     public Review findById(Long id) {
@@ -37,10 +39,13 @@ public class ReviewService {
 
     public Review update(Review review) {
         findById(review.getId());
-        return reviewStorage.update(review);
+        Review rev = reviewStorage.update(review);
+        feedService.updateReview(rev);
+        return rev;
     }
 
     public void delete(Long id) {
+        feedService.deleteReview(id, reviewStorage.findById(id).getUserId());
         int rows = reviewStorage.delete(id);
 
         if (rows == 0) {
