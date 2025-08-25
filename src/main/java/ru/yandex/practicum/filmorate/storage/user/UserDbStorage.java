@@ -12,7 +12,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Repository("userDbStorage")
 public class UserDbStorage implements UserStorage {
@@ -137,5 +139,11 @@ public class UserDbStorage implements UserStorage {
 
     public int removeById(Long userId) {
         return jdbc.update("DELETE FROM users WHERE id = ?", userId);
+    }
+
+    @Override
+    public Set<Long> getUserLikedFilms(Long userId) {
+        String sql = "SELECT film_id FROM film_likes WHERE user_id = ?";
+        return new HashSet<>(jdbc.query(sql, (rs, rowNum) -> rs.getLong("film_id"), userId));
     }
 }
