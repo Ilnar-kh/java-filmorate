@@ -61,8 +61,8 @@ public class FilmService {
             film.setGenres(uniqueGenres);
 
             List<Integer> genreIds = uniqueGenres.stream()
-                                                 .map(Genre::getId)
-                                                 .toList();
+                    .map(Genre::getId)
+                    .toList();
 
             Set<Integer> existingIds = genreStorage.findExistingIds(genreIds);
 
@@ -150,14 +150,14 @@ public class FilmService {
         feedService.unlikeFromUser(filmId, userId);
     }
 
-    public List<Film> getPopularFilms(int count) {
-        List<Film> films = filmStorage.getPopularFilms(count);
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
+        if (count <= 0) return java.util.Collections.emptyList();
 
-        // Загрузка директоров для популярных фильмов
+        List<Film> films = filmStorage.getPopularFilms(count, genreId, year);
+
         for (Film film : films) {
             film.setDirectors(directorStorage.getFilmDirectors(film.getId().intValue()));
         }
-
         return films;
     }
 

@@ -16,11 +16,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Repository
 public class FilmDbStorage implements FilmStorage {
@@ -133,14 +129,14 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         Film film = Film.builder()
-                        .id(resultSet.getLong("id"))
-                        .name(resultSet.getString("name"))
-                        .description(resultSet.getString("description"))
-                        .releaseDate(resultSet.getDate("release_date").toLocalDate())
-                        .duration(resultSet.getLong("duration"))
-                        .mpa(mpa)
-                        .genres(new LinkedHashSet<>()) // Используем LinkedHashSet
-                        .build();
+                .id(resultSet.getLong("id"))
+                .name(resultSet.getString("name"))
+                .description(resultSet.getString("description"))
+                .releaseDate(resultSet.getDate("release_date").toLocalDate())
+                .duration(resultSet.getLong("duration"))
+                .mpa(mpa)
+                .genres(new LinkedHashSet<>()) // Используем LinkedHashSet
+                .build();
 
         return film;
     }
@@ -155,9 +151,9 @@ public class FilmDbStorage implements FilmStorage {
         List<Genre> genres = new ArrayList<>(film.getGenres());
         // Удаляем дубликаты, сохраняя порядок первого вхождения
         List<Genre> uniqueGenres = genres.stream()
-                                         .filter(genre -> genre != null && genre.getId() != null)
-                                         .distinct()
-                                         .toList();
+                .filter(genre -> genre != null && genre.getId() != null)
+                .distinct()
+                .toList();
 
         String insertSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
         jdbcTemplate.batchUpdate(
@@ -194,8 +190,8 @@ public class FilmDbStorage implements FilmStorage {
 
         // одним запросом тянем жанры для всех фильмов
         Set<Long> filmIds = films.stream()
-                                 .map(Film::getId)
-                                 .collect(java.util.stream.Collectors.toSet());
+                .map(Film::getId)
+                .collect(java.util.stream.Collectors.toSet());
 
         Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -210,14 +206,92 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
+        // 1) Берём только ID популярных фильмов с учётом фильтров
+        List<Long> topIds = fetchPopularIds(count, genreId, year);
+        if (topIds.isEmpty()) return java.util.Collections.emptyList();
+
+        // 2) Грузим сами фильмы (без лайков), вместе с названием MPA
+        String placeholders = topIds.stream().map(id -> "?")
+                .collect(java.util.stream.Collectors.joining(","));
+
+        String filmSql = """
+                SELECT f.id,
+                       f.name,
+                       f.description,
+                       f.release_date,
+                       f.duration,
+                       f.mpa_id,
+                       m.name AS mpa_name
+                FROM films f
+                LEFT JOIN mpa m ON m.id = f.mpa_id
+                WHERE f.id IN (""" + placeholders + ")";
+
+        List<Film> films = jdbcTemplate.query(filmSql, this::mapRowToFilm, topIds.toArray());
+
+        // Сохраняем порядок, полученный на шаге 1 (по количеству лайков)
+        java.util.Map<Long, Integer> rank = new java.util.HashMap<>();
+        for (int i = 0; i < topIds.size(); i++) rank.put(topIds.get(i), i);
+        films.sort(java.util.Comparator.comparingInt(f -> rank.getOrDefault(f.getId(), Integer.MAX_VALUE)));
+
+        // 3) Одним запросом подгружаем жанры и расставляем
+        java.util.Set<Long> ids = films.stream().map(Film::getId).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, java.util.Set<Genre>> genresByFilm = loadGenresByFilmIds(ids);
+        for (Film f : films) {
+            f.setGenres(genresByFilm.getOrDefault(f.getId(), java.util.Collections.emptySet()));
+        }
+
+        return films;
+    }
+
+    private List<Long> fetchPopularIds(int count, Integer genreId, Integer year) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT f.id
+                FROM films f
+                LEFT JOIN film_likes fl ON fl.film_id = f.id
+                """);
+
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        boolean whereAdded = false;
+
+        if (genreId != null) {
+            sql.append("JOIN film_genres fg ON fg.film_id = f.id ");
+        }
+
+        if (genreId != null) {
+            sql.append(whereAdded ? "AND " : "WHERE ");
+            sql.append("fg.genre_id = ? ");
+            params.add(genreId);
+            whereAdded = true;
+        }
+
+        if (year != null) {
+            sql.append(whereAdded ? "AND " : "WHERE ");
+            sql.append("EXTRACT(YEAR FROM f.release_date) = ? ");
+            params.add(year);
+            whereAdded = true;
+        }
+
+        sql.append("""
+                GROUP BY f.id
+                ORDER BY COUNT(fl.user_id) DESC, f.id
+                LIMIT ?
+                """);
+        params.add(count);
+
+        return jdbcTemplate.query(sql.toString(),
+                (rs, rn) -> rs.getLong(1),
+                params.toArray());
+    }
+
     private Map<Long, Set<Genre>> loadGenresByFilmIds(Set<Long> filmIds) {
         if (filmIds == null || filmIds.isEmpty()) {
             return java.util.Collections.emptyMap();
         }
 
         String placeholders = filmIds.stream()
-                                     .map(id -> "?")
-                                     .collect(java.util.stream.Collectors.joining(","));
+                .map(id -> "?")
+                .collect(java.util.stream.Collectors.joining(","));
 
         // Добавляем ORDER BY для сортировки жанров в порядке их добавления
         String sql = """
@@ -254,8 +328,8 @@ public class FilmDbStorage implements FilmStorage {
         if (!films.isEmpty()) {
             // Загрузка жанров для всех фильмов
             Set<Long> filmIds = films.stream()
-                                     .map(Film::getId)
-                                     .collect(java.util.stream.Collectors.toSet());
+                    .map(Film::getId)
+                    .collect(java.util.stream.Collectors.toSet());
 
             Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -288,8 +362,8 @@ public class FilmDbStorage implements FilmStorage {
         if (!films.isEmpty()) {
             // Загрузка жанров для всех фильмов
             Set<Long> filmIds = films.stream()
-                                     .map(Film::getId)
-                                     .collect(java.util.stream.Collectors.toSet());
+                    .map(Film::getId)
+                    .collect(java.util.stream.Collectors.toSet());
 
             Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -353,8 +427,8 @@ public class FilmDbStorage implements FilmStorage {
 
         // одним запросом тянем жанры для всех фильмов
         Set<Long> filmIds = films.stream()
-                                 .map(Film::getId)
-                                 .collect(java.util.stream.Collectors.toSet());
+                .map(Film::getId)
+                .collect(java.util.stream.Collectors.toSet());
 
         Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -398,8 +472,8 @@ public class FilmDbStorage implements FilmStorage {
 
         // одним запросом тянем жанры для всех фильмов
         Set<Long> filmIds = films.stream()
-                                 .map(Film::getId)
-                                 .collect(java.util.stream.Collectors.toSet());
+                .map(Film::getId)
+                .collect(java.util.stream.Collectors.toSet());
 
         Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -442,8 +516,8 @@ public class FilmDbStorage implements FilmStorage {
 
         // одним запросом тянем жанры для всех фильмов
         Set<Long> filmIds = films.stream()
-                                 .map(Film::getId)
-                                 .collect(java.util.stream.Collectors.toSet());
+                .map(Film::getId)
+                .collect(java.util.stream.Collectors.toSet());
 
         Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
@@ -486,8 +560,8 @@ public class FilmDbStorage implements FilmStorage {
 
         // одним запросом тянем жанры для всех фильмов
         Set<Long> filmIds = films.stream()
-                                 .map(Film::getId)
-                                 .collect(java.util.stream.Collectors.toSet());
+                .map(Film::getId)
+                .collect(java.util.stream.Collectors.toSet());
 
         Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
