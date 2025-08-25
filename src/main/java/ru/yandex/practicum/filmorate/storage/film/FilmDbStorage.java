@@ -219,16 +219,16 @@ public class FilmDbStorage implements FilmStorage {
                 .collect(Collectors.joining(","));
 
         String filmSql = """
-            SELECT f.id,
-                   f.name,
-                   f.description,
-                   f.release_date,
-                   f.duration,
-                   f.mpa_id,
-                   m.name AS mpa_name
-            FROM films f
-            LEFT JOIN mpa m ON m.id = f.mpa_id
-            WHERE f.id IN (""" + placeholders + ")";
+                SELECT f.id,
+                       f.name,
+                       f.description,
+                       f.release_date,
+                       f.duration,
+                       f.mpa_id,
+                       m.name AS mpa_name
+                FROM films f
+                LEFT JOIN mpa m ON m.id = f.mpa_id
+                WHERE f.id IN (""" + placeholders + ")";
 
         List<Film> films = jdbcTemplate.query(filmSql, this::mapRowToFilm, topIds.toArray());
 
@@ -249,7 +249,8 @@ public class FilmDbStorage implements FilmStorage {
         // 4. Подгружаем режиссёров
         Map<Long, Set<Director>> directorsByFilm = loadDirectorsByFilmIds(ids);
         for (Film f : films) {
-            f.setDirectors((List<Director>) directorsByFilm.getOrDefault(f.getId(), Collections.emptySet()));
+            Set<Director> directors = directorsByFilm.getOrDefault(f.getId(), Collections.emptySet());
+            f.setDirectors(new ArrayList<>(directors));
         }
 
         return films;
@@ -257,10 +258,10 @@ public class FilmDbStorage implements FilmStorage {
 
     private List<Long> fetchPopularIds(int count, Integer genreId, Integer year) {
         StringBuilder sql = new StringBuilder("""
-            SELECT f.id
-            FROM films f
-            LEFT JOIN film_likes fl ON fl.film_id = f.id
-            """);
+                SELECT f.id
+                FROM films f
+                LEFT JOIN film_likes fl ON fl.film_id = f.id
+                """);
 
         List<Object> params = new ArrayList<>();
         boolean whereAdded = false;
@@ -284,10 +285,10 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         sql.append("""
-            GROUP BY f.id
-            ORDER BY COUNT(fl.user_id) DESC, f.id
-            LIMIT ?
-            """);
+                GROUP BY f.id
+                ORDER BY COUNT(fl.user_id) DESC, f.id
+                LIMIT ?
+                """);
         params.add(count);
 
         return jdbcTemplate.query(
@@ -307,10 +308,10 @@ public class FilmDbStorage implements FilmStorage {
                 .collect(Collectors.joining(","));
 
         String sql = """
-            SELECT fg.film_id, g.id, g.name
-            FROM film_genres fg
-            JOIN genres g ON g.id = fg.genre_id
-            WHERE fg.film_id IN (""" + placeholders + ")";
+                SELECT fg.film_id, g.id, g.name
+                FROM film_genres fg
+                JOIN genres g ON g.id = fg.genre_id
+                WHERE fg.film_id IN (""" + placeholders + ")";
 
         Map<Long, Set<Genre>> result = new HashMap<>();
         jdbcTemplate.query(sql, filmIds.toArray(), rs -> {
@@ -332,15 +333,19 @@ public class FilmDbStorage implements FilmStorage {
                 .collect(Collectors.joining(","));
 
         String sql = """
-            SELECT fd.film_id, d.id, d.name
-            FROM film_directors fd
-            JOIN directors d ON d.id = fd.director_id
-            WHERE fd.film_id IN (""" + placeholders + ")";
+                SELECT fd.film_id, d.director_id, d.name
+                FROM film_directors fd
+                JOIN directors d ON d.director_id = fd.director_id
+                WHERE fd.film_id IN (""" + placeholders + ")";
 
         Map<Long, Set<Director>> result = new HashMap<>();
+
         jdbcTemplate.query(sql, filmIds.toArray(), rs -> {
             long filmId = rs.getLong("film_id");
-            Director director = new Director(rs.getLong("id"), rs.getString("name"));
+            Director director = new Director(
+                    rs.getLong("director_id"),
+                    rs.getString("name")
+            );
             result.computeIfAbsent(filmId, k -> new LinkedHashSet<>()).add(director);
         });
 
