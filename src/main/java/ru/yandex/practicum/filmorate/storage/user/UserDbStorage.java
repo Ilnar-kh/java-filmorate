@@ -7,11 +7,7 @@ import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -92,22 +88,22 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getFriends(Long userId) {
         final String sql = """
-        SELECT u.* FROM users u
-        JOIN user_friends uf ON uf.addressee_id = u.id
-        WHERE uf.requester_id = ?
-        """;
+                SELECT u.* FROM users u
+                JOIN user_friends uf ON uf.addressee_id = u.id
+                WHERE uf.requester_id = ?
+                """;
         return jdbc.query(sql, this::mapRowToUser, userId);
     }
 
     @Override
     public List<User> getCommonFriends(Long userId, Long otherUserId) {
         final String sql = """
-        SELECT u.* FROM users u WHERE u.id IN (
-            SELECT uf1.addressee_id FROM user_friends uf1
-            JOIN user_friends uf2 ON uf1.addressee_id = uf2.addressee_id
-            WHERE uf1.requester_id = ? AND uf2.requester_id = ?
-        )
-        """;
+                SELECT u.* FROM users u WHERE u.id IN (
+                    SELECT uf1.addressee_id FROM user_friends uf1
+                    JOIN user_friends uf2 ON uf1.addressee_id = uf2.addressee_id
+                    WHERE uf1.requester_id = ? AND uf2.requester_id = ?
+                )
+                """;
         return jdbc.query(sql, this::mapRowToUser, userId, otherUserId);
     }
 

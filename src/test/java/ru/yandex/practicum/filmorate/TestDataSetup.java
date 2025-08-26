@@ -35,7 +35,7 @@ public class TestDataSetup {
 
         // Удаляем все данные из таблиц
         tables.stream()
-              .forEach(t -> jdbcTemplate.execute("TRUNCATE TABLE " + t));
+                .forEach(t -> jdbcTemplate.execute("TRUNCATE TABLE " + t));
 
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE"); // Включаем проверки обратно
     }

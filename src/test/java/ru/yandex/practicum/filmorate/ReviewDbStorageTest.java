@@ -21,8 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"})
 class ReviewDbStorageTest {
 
-    @Autowired JdbcTemplate jdbc;
-    @Autowired ReviewDbStorage storage;
+    @Autowired
+    JdbcTemplate jdbc;
+    @Autowired
+    ReviewDbStorage storage;
 
     private Long filmId;
     private Long user1;
@@ -38,15 +40,15 @@ class ReviewDbStorageTest {
         jdbc.update("DELETE FROM users");
 
         jdbc.update("INSERT INTO users(email, login, name, birthday) VALUES (?,?,?,?)",
-                "u1@y.ru", "u1", "U1", LocalDate.of(1990,1,1));
+                "u1@y.ru", "u1", "U1", LocalDate.of(1990, 1, 1));
         jdbc.update("INSERT INTO users(email, login, name, birthday) VALUES (?,?,?,?)",
-                "u2@y.ru", "u2", "U2", LocalDate.of(1991,2,2));
+                "u2@y.ru", "u2", "U2", LocalDate.of(1991, 2, 2));
 
         user1 = jdbc.queryForObject("SELECT id FROM users WHERE login='u1'", Long.class);
         user2 = jdbc.queryForObject("SELECT id FROM users WHERE login='u2'", Long.class);
 
         jdbc.update("INSERT INTO films(name, description, release_date, duration, mpa_id) VALUES (?,?,?,?,?)",
-                "F1", "desc", LocalDate.of(2000,1,1), 100, 2 /* PG */);
+                "F1", "desc", LocalDate.of(2000, 1, 1), 100, 2 /* PG */);
         filmId = jdbc.queryForObject("SELECT id FROM films WHERE name='F1'", Long.class);
 
         jdbc.update("INSERT INTO reviews(content, is_positive, user_id, film_id, useful) VALUES (?,?,?,?,0)",

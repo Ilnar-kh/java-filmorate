@@ -68,9 +68,9 @@ class FilmsSearchDbStorageIntegrationTest {
 
         // ищем общие фильмы между user1 и user2
         List<Long> commonFilmIds = filmDbStorage.findCommonFilms(1L, 2L)
-                                                .stream()
-                                                .map(Film::getId)
-                                                .toList();
+                .stream()
+                .map(Film::getId)
+                .toList();
 
         // проверка
         // Оба пользователя (1 и 2) лайкнули фильмы 5 и 4
@@ -83,8 +83,8 @@ class FilmsSearchDbStorageIntegrationTest {
         // проверка симметрии: (2,1) должен вернуть то же самое, что и (1,2)
         // ищем общие фильмы между user2 и user1, т.е те же фильмы 5 и 4
         List<Long> reversedFilmIds = filmDbStorage.findCommonFilms(2L, 1L).stream()
-                                                  .map(Film::getId)
-                                                  .toList();
+                .map(Film::getId)
+                .toList();
 
         assertEquals(expectedFilmIds, reversedFilmIds,
                 "Результат должен быть одинаков при смене порядка пользователей");
