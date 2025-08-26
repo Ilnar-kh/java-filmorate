@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.storage.mpa.MpaDbStorage;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,7 +31,6 @@ class FilmDbStorageIntegrationTest {
 
     @Test
     void testCreateFindByIdAndFindAll() {
-        // Получаем рейтинг с кодом "PG"
         MpaRating rating = mpaDbStorage.findById(2);
 
         Film filmToCreate = Film.builder()
@@ -44,9 +44,19 @@ class FilmDbStorageIntegrationTest {
         Film createdFilm = filmDbStorage.create(filmToCreate);
         assertThat(createdFilm.getId()).isPositive();
 
-        Film retrievedFilm = filmDbStorage.findById(createdFilm.getId());
-        assertThat(retrievedFilm).isNotNull()
-                .extracting("id", "name", "description", "duration", "mpa.id", "mpa.name")
+        Optional<Film> retrievedOpt = filmDbStorage.findById(createdFilm.getId());
+        assertThat(retrievedOpt).isPresent();
+        Film retrievedFilm = retrievedOpt.get();
+
+        assertThat(retrievedFilm)
+                .extracting(
+                        Film::getId,
+                        Film::getName,
+                        Film::getDescription,
+                        Film::getDuration,
+                        f -> f.getMpa().getId(),
+                        f -> f.getMpa().getName()
+                )
                 .containsExactly(
                         createdFilm.getId(),
                         "Название",
@@ -57,7 +67,7 @@ class FilmDbStorageIntegrationTest {
                 );
 
         List<Film> allFilms = filmDbStorage.findAll();
-        assertThat(allFilms).extracting("id").contains(createdFilm.getId());
+        assertThat(allFilms).extracting(Film::getId).contains(createdFilm.getId());
     }
 
     @Test
@@ -74,14 +84,16 @@ class FilmDbStorageIntegrationTest {
 
         Film createdFilm = filmDbStorage.create(originalFilm);
 
-        // Обновляем
         createdFilm.setName("New Name");
         createdFilm.setDuration(100L);
         MpaRating rRating = mpaDbStorage.findById(4);
         createdFilm.setMpa(rRating);
 
-        Film updatedFilm = filmDbStorage.update(createdFilm);
-        Film retrievedFilm = filmDbStorage.findById(updatedFilm.getId());
+        Optional<Film> updatedOpt = filmDbStorage.update(createdFilm);
+        assertThat(updatedOpt).isPresent();
+
+        Film retrievedFilm = filmDbStorage.findById(updatedOpt.get().getId())
+                .orElseThrow();
 
         assertThat(retrievedFilm.getName()).isEqualTo("New Name");
         assertThat(retrievedFilm.getDuration()).isEqualTo(100L);
@@ -90,13 +102,14 @@ class FilmDbStorageIntegrationTest {
 
     @Test
     void testLikesFlow() {
-        // Добавляем пользователя напрямую
         jdbcTemplate.update(
                 "INSERT INTO users(email, login, name, birthday) VALUES (?, ?, ?, ?)",
                 "user@example.com", "userLogin", "User Name", LocalDate.of(2000, 1, 1)
         );
-
-        Long userId = jdbcTemplate.queryForObject("SELECT id FROM users WHERE login = ?", Long.class, "userLogin");
+        Long userId = jdbcTemplate.queryForObject(
+                "SELECT id FROM users WHERE login = ?",
+                Long.class, "userLogin"
+        );
 
         MpaRating rating = mpaDbStorage.findById(3);
 
@@ -110,7 +123,6 @@ class FilmDbStorageIntegrationTest {
 
         Film createdFilm = filmDbStorage.create(film);
 
-        // Лайк
         filmDbStorage.addLike(createdFilm.getId(), userId);
         Integer likeCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?",
@@ -118,7 +130,6 @@ class FilmDbStorageIntegrationTest {
         );
         assertThat(likeCount).isEqualTo(1);
 
-        // Удаляем лайк
         filmDbStorage.removeLike(createdFilm.getId(), userId);
         Integer likeCountAfterRemove = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?",
