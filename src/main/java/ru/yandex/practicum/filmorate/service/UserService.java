@@ -32,7 +32,6 @@ public class UserService {
         return userStorage.update(user);
     }
 
-
     public Collection<User> findAll() {
         log.info("Запрошен список всех пользователей");
         return userStorage.findAll();
