@@ -23,14 +23,15 @@ public class UserService {
     }
 
     public User create(User user) {
-        log.info("Создание пользователя: {}", user);
+        postProcessName(user);
         return userStorage.create(user);
     }
 
     public User update(User user) {
-        log.info("Обновление пользователя: {}", user);
+        postProcessName(user);
         return userStorage.update(user);
     }
+
 
     public Collection<User> findAll() {
         log.info("Запрошен список всех пользователей");
@@ -67,5 +68,11 @@ public class UserService {
     public int removeById(Long userId) {
         log.info("Запрос на удаление пользователя {}", userId);
         return userStorage.removeById(userId);
+    }
+
+    private void postProcessName(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
     }
 }
