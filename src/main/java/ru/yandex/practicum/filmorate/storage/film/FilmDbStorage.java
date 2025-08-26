@@ -1,22 +1,17 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 
 import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,7 +42,7 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public Film update(Film film) {
+    public Optional<Film> update(Film film) {
         String updateQuery = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
         jdbcTemplate.update(updateQuery,
                 film.getName(),
@@ -73,11 +68,18 @@ public class FilmDbStorage implements FilmStorage {
                 FROM films f
                 LEFT JOIN mpa m ON m.id = f.mpa_id
                 """;
-        return jdbcTemplate.query(selectAllQuery, this::mapRowToFilm);
+        List<Film> films = jdbcTemplate.query(selectAllQuery, this::mapRowToFilm);
+        if (films.isEmpty()) return films;
+        Set<Long> ids = films.stream().map(Film::getId).collect(java.util.stream.Collectors.toSet());
+        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(ids);
+        for (Film f : films) {
+            f.setGenres(genresByFilm.getOrDefault(f.getId(), java.util.Collections.emptySet()));
+        }
+        return films;
     }
 
     @Override
-    public Film findById(Long filmId) {
+    public Optional<Film> findById(Long filmId) {
         String sql = """
                 SELECT f.id,
                        f.name,
@@ -92,19 +94,13 @@ public class FilmDbStorage implements FilmStorage {
                 """;
         try {
             Film film = jdbcTemplate.queryForObject(sql, this::mapRowToFilm, filmId);
-
-            // загрузка жанров
-            Map<Long, Set<Genre>> genresByFilm =
-                    loadGenresByFilmIds(java.util.Set.of(film.getId()));
-
-            film.setGenres(new LinkedHashSet<>(
-                    genresByFilm.getOrDefault(film.getId(),
-                            java.util.Collections.emptySet())
+            Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(java.util.Set.of(film.getId()));
+            film.setGenres(new java.util.LinkedHashSet<>(
+                    genresByFilm.getOrDefault(film.getId(), java.util.Collections.emptySet())
             ));
-
-            return film;
-        } catch (EmptyResultDataAccessException e) {
-            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
+            return java.util.Optional.of(film);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return java.util.Optional.empty();
         }
     }
 

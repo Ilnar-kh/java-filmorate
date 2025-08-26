@@ -55,8 +55,8 @@ public class UserController {
 
     @PutMapping("/{id}/friends/{friendId}")
     public void addFriend(
-            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long id,
-            @PathVariable @Positive(message = "ID друга должно быть положительным") Long friendId) {
+            @PathVariable Long id,
+            @PathVariable Long friendId) {
         log.info("PUT /users/{}/friends/{} — добавление друга", id, friendId);
         checkUsersExist(id, friendId);
         userService.addFriend(id, friendId);
@@ -64,8 +64,8 @@ public class UserController {
 
     @DeleteMapping("/{id}/friends/{friendId}")
     public void removeFriend(
-            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long id,
-            @PathVariable @Positive(message = "ID друга должно быть положительным") Long friendId) {
+            @PathVariable Long id,
+            @PathVariable Long friendId) {
         log.info("DELETE /users/{}/friends/{} — удаление из друзей", id, friendId);
         checkUsersExist(id, friendId);
         userService.deleteFriend(id, friendId);
@@ -88,7 +88,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public void removeById(@PathVariable @Positive(message = "ID пользователя должно быть положительным")
+    public void removeById(@PathVariable
                            Long id) {
         if (userService.removeById(id) == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь с id=" + id + " не найден");
@@ -97,7 +97,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public User findById(@PathVariable @Positive Long id) {
+    public User findById(@PathVariable Long id) {
         log.info("GET /users/{} - получение пользователя по id", id);
         return userService.findById(id);
     }

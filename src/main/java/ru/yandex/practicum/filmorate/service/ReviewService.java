@@ -22,8 +22,10 @@ public class ReviewService {
     private final FeedService feedService;
 
     public Review create(Review review) {
-        userStorage.findById(review.getUserId());
-        filmStorage.findById(review.getFilmId());
+        userStorage.findById(review.getUserId())
+                .orElseThrow(() -> new NotFoundException("User " + review.getUserId() + " not found"));
+        filmStorage.findById(review.getFilmId())
+                .orElseThrow(() -> new NotFoundException("Film " + review.getFilmId() + " not found"));
         Review rev = reviewStorage.create(review);
         feedService.addReview(rev);
         return rev;
@@ -38,6 +40,7 @@ public class ReviewService {
     }
 
     public Review update(Review review) {
+        // 404 если нет
         findById(review.getId());
         Review rev = reviewStorage.update(review);
         feedService.updateReview(rev);
@@ -45,26 +48,30 @@ public class ReviewService {
     }
 
     public void delete(Long id) {
-        feedService.deleteReview(id, reviewStorage.findById(id).getUserId());
+        // достаём, чтобы гарантировать 404 и знать userId для фида
+        Review existing = findById(id);
+        feedService.deleteReview(id, existing.getUserId());
         int rows = reviewStorage.delete(id);
-
         if (rows == 0) {
             throw new NotFoundException("Отзыв с id=" + id + " не найден");
         }
     }
 
     public List<Review> getReviewsByFilmId(Long id, int count) {
+        // по желанию можно проверить существование фильма
         return reviewStorage.getReviewsByFilmId(id, count);
     }
 
     public void putRate(Long id, Long userId, Boolean isUseful) {
-        userStorage.findById(userId);
+        userStorage.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User " + userId + " not found"));
         findById(id);
         reviewStorage.putRate(id, userId, isUseful);
     }
 
     public void deleteRate(Long id, Long userId, Boolean isUseful) {
-        userStorage.findById(userId);
+        userStorage.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User " + userId + " not found"));
         findById(id);
         reviewStorage.deleteRate(id, userId, isUseful);
     }

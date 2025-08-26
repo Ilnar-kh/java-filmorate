@@ -53,7 +53,7 @@ public class FilmController {
 
     @GetMapping("/{filmId}")
     public Film findById(
-            @PathVariable @Positive(message = "ID фильма должно быть положительным") Long filmId
+            @PathVariable Long filmId
     ) {
         log.info("GET   /films/{} — запрос фильма по id", filmId);
         return filmService.findById(filmId);
@@ -61,8 +61,8 @@ public class FilmController {
 
     @PutMapping("/{filmId}/like/{userId}")
     public void putLike(
-            @PathVariable @Positive(message = "ID фильма должно быть положительным") Long filmId,
-            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long userId
+            @PathVariable Long filmId,
+            @PathVariable Long userId
     ) {
         log.info("PUT   /films/{}/like/{} — пользователь ставит лайк", filmId, userId);
         filmService.putLike(filmId, userId);
@@ -70,8 +70,8 @@ public class FilmController {
 
     @DeleteMapping("/{filmId}/like/{userId}")
     public void deleteLike(
-            @PathVariable @Positive(message = "ID фильма должно быть положительным") Long filmId,
-            @PathVariable @Positive(message = "ID пользователя должно быть положительным") Long userId
+            @PathVariable Long filmId,
+            @PathVariable Long userId
     ) {
         log.info("DELETE /films/{}/like/{} — пользователь удаляет лайк", filmId, userId);
         filmService.deleteLike(filmId, userId);
@@ -80,7 +80,7 @@ public class FilmController {
     @GetMapping("/popular")
     public List<Film> getPopularFilms(
             @RequestParam(name = "count", defaultValue = "10")
-            @Positive(message = "count должен быть положительным") int count,
+             int count,
             @RequestParam(name = "genreId", required = false) Integer genreId,
             @RequestParam(name = "year", required = false) Integer year
     ) {
@@ -97,7 +97,7 @@ public class FilmController {
 
     @GetMapping("/director/{directorId}")
     public List<Film> getFilmsByDirectorSorted(
-            @PathVariable @Positive(message = "ID режиссера должно быть положительным") Long directorId,
+            @PathVariable Long directorId,
             @RequestParam(name = "sortBy", defaultValue = "year") String sortBy
     ) {
         log.info("GET /films/director/{}?sortBy={} — получение фильмов режиссера с сортировкой", directorId, sortBy);
@@ -105,7 +105,7 @@ public class FilmController {
     }
 
     @DeleteMapping("/{id}")
-    public void removeById(@PathVariable @Positive(message = "ID фильма должно быть положительным")
+    public void removeById(@PathVariable
                            Long id) {
         if (filmService.removeById(id) == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм с id=" + id + " не найден");

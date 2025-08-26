@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Repository("userDbStorage")
@@ -52,19 +53,15 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        if (findById(user.getId()) == null) {
+        final String sql = "UPDATE users SET email=?, login=?, name=?, birthday=? WHERE id=?";
+        int rows = jdbc.update(sql, user.getEmail(), user.getLogin(), user.getName(),
+                Date.valueOf(user.getBirthday()), user.getId());
+        if (rows == 0) { // на всякий случай
             throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
         }
-
-        final String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
-        jdbc.update(sql,
-                user.getEmail(),
-                user.getLogin(),
-                user.getName(),
-                Date.valueOf(user.getBirthday()),
-                user.getId());
         return user;
     }
+
 
     @Override
     public List<User> findAll() {
@@ -73,67 +70,44 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public User findById(Long userId) {
+    public Optional<User> findById(Long userId) {
         final String sql = "SELECT * FROM users WHERE id = ?";
         List<User> users = jdbc.query(sql, this::mapRowToUser, userId);
-        if (users.isEmpty()) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
-        return users.get(0);
+        return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
     }
+
 
     @Override
     public void addFriend(Long userId, Long friendId) {
-        if (findById(userId) == null) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
-        if (findById(friendId) == null) {
-            throw new NotFoundException("Пользователь с id=" + friendId + " не найден");
-        }
-
         final String sql = "INSERT INTO user_friends(requester_id, addressee_id, status_code) VALUES (?, ?, 'CONFIRMED')";
         jdbc.update(sql, userId, friendId);
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
-        if (findById(userId) == null) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
-        if (findById(friendId) == null) {
-            throw new NotFoundException("Пользователь с id=" + friendId + " не найден");
-        }
-
         final String sql = "DELETE FROM user_friends WHERE requester_id = ? AND addressee_id = ?";
         jdbc.update(sql, userId, friendId);
     }
 
     @Override
     public List<User> getFriends(Long userId) {
-        if (findById(userId) == null) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
-
-        final String sql = "SELECT u.* FROM users u " +
-                "JOIN user_friends uf ON uf.addressee_id = u.id " +
-                "WHERE uf.requester_id = ?";
+        final String sql = """
+        SELECT u.* FROM users u
+        JOIN user_friends uf ON uf.addressee_id = u.id
+        WHERE uf.requester_id = ?
+        """;
         return jdbc.query(sql, this::mapRowToUser, userId);
     }
 
     @Override
     public List<User> getCommonFriends(Long userId, Long otherUserId) {
-        if (findById(userId) == null) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
-        if (findById(otherUserId) == null) {
-            throw new NotFoundException("Пользователь с id=" + otherUserId + " не найден");
-        }
-
-        final String sql =
-                "SELECT u.* FROM users u WHERE u.id IN (" +
-                        "SELECT uf1.addressee_id FROM user_friends uf1 " +
-                        "JOIN user_friends uf2 ON uf1.addressee_id = uf2.addressee_id " +
-                        "WHERE uf1.requester_id = ? AND uf2.requester_id = ?)";
+        final String sql = """
+        SELECT u.* FROM users u WHERE u.id IN (
+            SELECT uf1.addressee_id FROM user_friends uf1
+            JOIN user_friends uf2 ON uf1.addressee_id = uf2.addressee_id
+            WHERE uf1.requester_id = ? AND uf2.requester_id = ?
+        )
+        """;
         return jdbc.query(sql, this::mapRowToUser, userId, otherUserId);
     }
 

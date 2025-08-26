@@ -25,18 +25,15 @@ public class FeedDbStorage implements FeedStorage {
         addOrRemoveFriend(userId, friendToAddId, action);
     }
 
-
     public void deleteFriend(long userId, long friendId) throws NotFoundException {
         String action = "REMOVE";
         addOrRemoveFriend(userId, friendId, action);
     }
 
-
     public void likeFromUser(long filmId, long userId) {
         String action = "ADD";
         addOrRemoveLikeFromUser(userId, filmId, action);
     }
-
 
     public void unlikeFromUser(long filmId, long userId) {
         String action = "REMOVE";
@@ -52,7 +49,6 @@ public class FeedDbStorage implements FeedStorage {
         String action = "UPDATE";
         addOrUpdateReview(review, action);
     }
-
 
     public void deleteReview(Long reviewId, long userId) {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());

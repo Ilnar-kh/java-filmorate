@@ -4,6 +4,7 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface UserStorage {
@@ -14,7 +15,7 @@ public interface UserStorage {
 
     User update(User user);
 
-    User findById(Long id);
+    Optional<User> findById(Long id);
 
     void addFriend(Long userId, Long friendId);
 

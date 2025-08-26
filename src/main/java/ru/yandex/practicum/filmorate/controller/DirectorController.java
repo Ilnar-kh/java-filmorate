@@ -54,12 +54,4 @@ public class DirectorController {
         log.info("DELETE /directors/{} — удаление режиссера", id);
         directorService.deleteDirector(id);
     }
-
-    @ExceptionHandler(NotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleNotFoundException(NotFoundException e) {
-        Map<String, String> response = new HashMap<>();
-        response.put("error", e.getMessage());
-        return response;
-    }
 }

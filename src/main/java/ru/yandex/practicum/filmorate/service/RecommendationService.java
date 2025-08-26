@@ -1,15 +1,14 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class RecommendationService {
@@ -22,18 +21,20 @@ public class RecommendationService {
     }
 
     public List<Film> getRecommendations(Long userId) {
-        // Фильмы, которые лайкнул текущий пользователь
+        // проверяем существование пользователя
+        userStorage.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User " + userId + " not found"));
+
+        // лайки пользователя
         Set<Long> userLikes = userStorage.getUserLikedFilms(userId);
 
         Long similarUserId = null;
         int maxCommon = 0;
 
-        // Ищем пользователя с максимальным пересечением по лайкам
         for (User other : userStorage.findAll()) {
             if (other.getId().equals(userId)) continue;
 
             Set<Long> otherLikes = userStorage.getUserLikedFilms(other.getId());
-
             Set<Long> common = new HashSet<>(userLikes);
             common.retainAll(otherLikes);
 
@@ -47,12 +48,13 @@ public class RecommendationService {
             return Collections.emptyList();
         }
 
-        // Рекомендации = фильмы, которые лайкнул похожий, но не лайкнул userId
-        Set<Long> similarLikes = new HashSet<>(userStorage.getUserLikedFilms(similarUserId));
+        // фильмы похожего, которых нет у userId
+        Set<Long> similarLikes = new LinkedHashSet<>(userStorage.getUserLikedFilms(similarUserId));
         similarLikes.removeAll(userLikes);
 
         return similarLikes.stream()
-                .map(filmStorage::findById)
-                .toList();
+                .map(id -> filmStorage.findById(id).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }

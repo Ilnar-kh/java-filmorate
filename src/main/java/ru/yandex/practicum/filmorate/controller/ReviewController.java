@@ -31,14 +31,14 @@ public class ReviewController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable @Positive Long id) {
+    public void delete(@PathVariable Long id) {
         reviewService.delete(id);
     }
 
     @GetMapping
     public List<Review> getReviews(
-            @RequestParam(value = "filmId", required = false) @Positive Long filmId,
-            @RequestParam(value = "count", defaultValue = "10") @Positive Integer count
+            @RequestParam(value = "filmId", required = false) Long filmId,
+            @RequestParam(value = "count", defaultValue = "10") Integer count
     ) {
         return reviewService.getReviewsByFilmId(filmId, count);
     }

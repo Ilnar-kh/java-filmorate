@@ -45,23 +45,6 @@ public class User {
     @PastOrPresent(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 
-    public Set<Long> getFriends() {
-        log.info("Получен список друзей пользователя с ID = {}", id);
-        return friends;
-    }
-
-    public void addFriend(Long friendId) {
-        log.info("Пользователь с ID = {} добавил друга с ID = {}", id, friendId);
-        friendshipStatuses.put(friendId, FriendshipStatus.CONFIRMED);
-        friends.add(friendId);
-    }
-
-    public void removeFriend(Long friendId) {
-        log.info("Пользователь с ID = {} удалил друга с ID = {}", id, friendId);
-        friendshipStatuses.remove(friendId);
-        friends.remove(friendId);
-    }
-
     public User(Long id,
                 String email,
                 String login,
