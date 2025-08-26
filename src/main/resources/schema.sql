@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS films (
     description  TEXT,
     release_date DATE    NOT NULL,
     duration     INT     NOT NULL,
-    mpa_id   VARCHAR(10),
+    mpa_id   INT,
     FOREIGN KEY (mpa_id) REFERENCES mpa(id)
 );
 
