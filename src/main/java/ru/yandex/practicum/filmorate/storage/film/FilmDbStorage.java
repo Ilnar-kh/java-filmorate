@@ -113,17 +113,17 @@ public class FilmDbStorage implements FilmStorage {
         String placeholders = String.join(",", Collections.nCopies(filmIds.size(), "?"));
 
         String sql = """
-        SELECT f.id,
-               f.name,
-               f.description,
-               f.release_date,
-               f.duration,
-               f.mpa_id,
-               m.name AS mpa_name
-        FROM films f
-        LEFT JOIN mpa m ON f.mpa_id = m.id
-        WHERE f.id IN (%s)
-    """.formatted(placeholders);
+                    SELECT f.id,
+                           f.name,
+                           f.description,
+                           f.release_date,
+                           f.duration,
+                           f.mpa_id,
+                           m.name AS mpa_name
+                    FROM films f
+                    LEFT JOIN mpa m ON f.mpa_id = m.id
+                    WHERE f.id IN (%s)
+                """.formatted(placeholders);
 
         return jdbcTemplate.query(sql, this::mapRowToFilm, filmIds.toArray());
     }
