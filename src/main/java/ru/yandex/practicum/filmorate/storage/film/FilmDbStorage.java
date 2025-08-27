@@ -106,13 +106,25 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> findFilmsByIds(Set<Long> filmIds) {
-        if (filmIds.isEmpty()) return Collections.emptyList();
+        if (filmIds == null || filmIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        String placeholders = String.join(",", Collections.nCopies(filmIds.size(), "?"));
 
-        String placeholders = filmIds.stream()
-                .map(id -> "?")
-                .collect(Collectors.joining(", "));
+        String sql = """
+        SELECT f.id,
+               f.name,
+               f.description,
+               f.release_date,
+               f.duration,
+               f.mpa_id,
+               m.name AS mpa_name
+        FROM films f
+        LEFT JOIN mpa m ON f.mpa_id = m.id
+        WHERE f.id IN (%s)
+    """.formatted(placeholders);
 
-        String sql = "SELECT * FROM films WHERE id IN (" + placeholders + ")";
         return jdbcTemplate.query(sql, this::mapRowToFilm, filmIds.toArray());
     }
 
