@@ -123,7 +123,11 @@ public class FilmDbStorage implements FilmStorage {
                     WHERE f.id IN (%s)
                 """.formatted(placeholders);
 
-        return jdbcTemplate.query(sql, this::mapRowToFilm, filmIds.toArray());
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, filmIds.toArray());
+
+        loadGenresForFilms(films);
+
+        return films;
     }
 
     @Override
