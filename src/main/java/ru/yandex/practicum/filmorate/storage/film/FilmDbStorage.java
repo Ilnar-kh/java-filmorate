@@ -109,9 +109,7 @@ public class FilmDbStorage implements FilmStorage {
         if (filmIds == null || filmIds.isEmpty()) {
             return Collections.emptyList();
         }
-        
         String placeholders = String.join(",", Collections.nCopies(filmIds.size(), "?"));
-
         String sql = """
                     SELECT f.id,
                            f.name,
