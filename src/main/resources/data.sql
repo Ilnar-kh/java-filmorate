@@ -20,14 +20,6 @@ FROM users;
 DELETE
 FROM directors;
 
--- Очистка справочных таблиц (если нужно)
---DELETE FROM genres;
---DELETE FROM mpa;
---DELETE FROM friendship_statuses;
-
--- Сброс автоинкремента (зависит от СУБД, пример для PostgreSQL и H2)
--- Для PostgreSQL замените на ALTER SEQUENCE ... RESTART WITH 1, если используются SEQUENCE
-
 -- Сброс автоинкремента для основных таблиц H2
 ALTER TABLE films
     ALTER COLUMN id RESTART WITH 1;

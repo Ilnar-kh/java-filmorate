@@ -2,10 +2,7 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public interface UserStorage {
 
@@ -27,5 +24,5 @@ public interface UserStorage {
 
     int removeById(Long userId);
 
-    Set<Long> getUserLikedFilms(Long userId);
+    Map<Long, Set<Long>> getAllUserLikedFilms();
 }

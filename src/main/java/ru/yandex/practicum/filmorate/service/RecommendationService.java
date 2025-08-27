@@ -3,12 +3,10 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class RecommendationService {
@@ -21,40 +19,48 @@ public class RecommendationService {
     }
 
     public List<Film> getRecommendations(Long userId) {
-        // проверяем существование пользователя
+        // 1. Проверяем, что пользователь существует
         userStorage.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User " + userId + " not found"));
 
-        // лайки пользователя
-        Set<Long> userLikes = userStorage.getUserLikedFilms(userId);
+        // 2. Забираем все лайки всех пользователей одним запросом
+        Map<Long, Set<Long>> userLikesMap = userStorage.getAllUserLikedFilms();
+
+        // 3. Лайки текущего пользователя
+        Set<Long> userLikes = userLikesMap.getOrDefault(userId, Collections.emptySet());
 
         Long similarUserId = null;
         int maxCommon = 0;
 
-        for (User other : userStorage.findAll()) {
-            if (other.getId().equals(userId)) continue;
+        // 4. Находим пользователя с максимальным пересечением лайков
+        for (Map.Entry<Long, Set<Long>> entry : userLikesMap.entrySet()) {
+            Long otherId = entry.getKey();
+            if (otherId.equals(userId)) continue;
 
-            Set<Long> otherLikes = userStorage.getUserLikedFilms(other.getId());
+            Set<Long> otherLikes = entry.getValue();
             Set<Long> common = new HashSet<>(userLikes);
             common.retainAll(otherLikes);
 
             if (common.size() > maxCommon) {
                 maxCommon = common.size();
-                similarUserId = other.getId();
+                similarUserId = otherId;
             }
         }
 
+        // 5. Если похожего пользователя нет — рекомендаций нет
         if (similarUserId == null) {
             return Collections.emptyList();
         }
 
-        // фильмы похожего, которых нет у userId
-        Set<Long> similarLikes = new LinkedHashSet<>(userStorage.getUserLikedFilms(similarUserId));
-        similarLikes.removeAll(userLikes);
+        // 6. Фильмы похожего пользователя, которых нет у userId
+        Set<Long> recommendedIds = new HashSet<>(userLikesMap.get(similarUserId));
+        recommendedIds.removeAll(userLikes);
 
-        return similarLikes.stream()
-                .map(id -> filmStorage.findById(id).orElse(null))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        if (recommendedIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 7. Загружаем все фильмы одним запросом
+        return filmStorage.findFilmsByIds(recommendedIds);
     }
 }

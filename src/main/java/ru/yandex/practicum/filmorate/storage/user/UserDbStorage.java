@@ -8,10 +8,8 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.sql.Date;
+import java.util.*;
 
 @Repository("userDbStorage")
 public class UserDbStorage implements UserStorage {
@@ -112,8 +110,16 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public Set<Long> getUserLikedFilms(Long userId) {
-        String sql = "SELECT film_id FROM film_likes WHERE user_id = ?";
-        return new HashSet<>(jdbc.query(sql, (rs, rowNum) -> rs.getLong("film_id"), userId));
+    public Map<Long, Set<Long>> getAllUserLikedFilms() {
+        String sql = "SELECT user_id, film_id FROM film_likes";
+        Map<Long, Set<Long>> result = new HashMap<>();
+
+        jdbc.query(sql, rs -> {
+            long userId = rs.getLong("user_id");
+            long filmId = rs.getLong("film_id");
+            result.computeIfAbsent(userId, k -> new HashSet<>()).add(filmId);
+        });
+
+        return result;
     }
 }

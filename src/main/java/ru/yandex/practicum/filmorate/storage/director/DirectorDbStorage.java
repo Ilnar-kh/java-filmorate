@@ -10,8 +10,8 @@ import ru.yandex.practicum.filmorate.model.Director;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 public class DirectorDbStorage implements DirectorStorage {
@@ -89,5 +89,34 @@ public class DirectorDbStorage implements DirectorStorage {
                 (long) rs.getInt("director_id"),
                 rs.getString("name")
         );
+    }
+
+    public Map<Long, List<Director>> getDirectorsByFilmIds(Set<Long> filmIds) {
+        if (filmIds == null || filmIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        String placeholders = filmIds.stream()
+                .map(id -> "?")
+                .collect(Collectors.joining(","));
+
+        String sql = """
+                SELECT fd.film_id, d.director_id, d.name
+                FROM film_directors fd
+                JOIN directors d ON d.director_id = fd.director_id
+                WHERE fd.film_id IN (""" + placeholders + ")";
+
+        Map<Long, List<Director>> result = new HashMap<>();
+
+        jdbcTemplate.query(sql, filmIds.toArray(), rs -> {
+            long filmId = rs.getLong("film_id");
+            Director director = new Director(
+                    rs.getLong("director_id"),
+                    rs.getString("name")
+            );
+            result.computeIfAbsent(filmId, k -> new ArrayList<>()).add(director);
+        });
+
+        return result;
     }
 }

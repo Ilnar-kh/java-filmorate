@@ -16,10 +16,8 @@ import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -94,11 +92,9 @@ public class FilmService {
         return findById(film.getId());
     }
 
-
     private void updateFilmDirectors(Film film) {
         for (Director director : film.getDirectors()) {
             if (director.getId() != null) {
-                directorService.getDirectorById(director.getId());
                 filmStorage.addFilmDirector(film.getId(), director.getId());
             }
         }
@@ -106,9 +102,24 @@ public class FilmService {
 
     public Collection<Film> findAll() {
         List<Film> films = filmStorage.findAll();
-        for (Film film : films) {
-            film.setDirectors(directorStorage.getFilmDirectors(film.getId().intValue()));
+
+        if (films.isEmpty()) {
+            return films;
         }
+
+        // Собираем ID всех фильмов
+        Set<Long> filmIds = films.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+
+        // Достаём всех режиссёров одним запросом
+        Map<Long, List<Director>> directorsByFilm = directorStorage.getDirectorsByFilmIds(filmIds);
+
+        // Расставляем режиссёров фильмам
+        for (Film film : films) {
+            film.setDirectors(directorsByFilm.getOrDefault(film.getId(), new ArrayList<>()));
+        }
+
         return films;
     }
 
@@ -136,11 +147,27 @@ public class FilmService {
     }
 
     public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
-        if (count <= 0) return java.util.Collections.emptyList();
+        if (count <= 0) return Collections.emptyList();
+
         List<Film> films = filmStorage.getPopularFilms(count, genreId, year);
-        for (Film film : films) {
-            film.setDirectors(directorStorage.getFilmDirectors(film.getId().intValue()));
+
+        if (films.isEmpty()) {
+            return films;
         }
+
+        // Получаем ID всех фильмов
+        Set<Long> filmIds = films.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+
+        // Загружаем всех режиссёров одним запросом
+        Map<Long, List<Director>> directorsByFilm = directorStorage.getDirectorsByFilmIds(filmIds);
+
+        // Расставляем режиссёров по фильмам
+        for (Film film : films) {
+            film.setDirectors(directorsByFilm.getOrDefault(film.getId(), new ArrayList<>()));
+        }
+
         return films;
     }
 
@@ -170,11 +197,26 @@ public class FilmService {
     public List<Film> getCommonFilms(Long userId, Long friendId) {
         getUserOrThrow(userId);
         getUserOrThrow(friendId);
-        log.debug("Service: getCommonFilms userId={}, friendId={}", userId, friendId);
+
         List<Film> films = filmStorage.findCommonFilms(userId, friendId);
-        for (Film film : films) {
-            film.setDirectors(directorStorage.getFilmDirectors(film.getId().intValue()));
+
+        if (films.isEmpty()) {
+            return films;
         }
+
+        // Достаём все ID фильмов
+        Set<Long> filmIds = films.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+
+        // Получаем всех режиссёров одним запросом
+        Map<Long, List<Director>> directorsByFilm = directorStorage.getDirectorsByFilmIds(filmIds);
+
+        // Расставляем режиссёров
+        for (Film film : films) {
+            film.setDirectors(directorsByFilm.getOrDefault(film.getId(), new ArrayList<>()));
+        }
+
         return films;
     }
 

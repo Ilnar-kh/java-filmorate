@@ -104,6 +104,17 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
+    @Override
+    public List<Film> findFilmsByIds(Set<Long> filmIds) {
+        if (filmIds.isEmpty()) return Collections.emptyList();
+
+        String placeholders = filmIds.stream()
+                .map(id -> "?")
+                .collect(Collectors.joining(", "));
+
+        String sql = "SELECT * FROM films WHERE id IN (" + placeholders + ")";
+        return jdbcTemplate.query(sql, this::mapRowToFilm, filmIds.toArray());
+    }
 
     @Override
     public void addLike(Long filmId, Long userId) {
@@ -186,20 +197,7 @@ public class FilmDbStorage implements FilmStorage {
 
         if (films.isEmpty()) return films;
 
-        // одним запросом тянем жанры для всех фильмов
-        Set<Long> filmIds = films.stream()
-                .map(Film::getId)
-                .collect(java.util.stream.Collectors.toSet());
-
-        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
-
-        // расставляем жанры без дополнительных запросов
-        for (Film film : films) {
-            film.setGenres(genresByFilm.getOrDefault(
-                    film.getId(),
-                    java.util.Collections.emptySet()
-            ));
-        }
+        loadGenresForFilms(films);
 
         return films;
     }
@@ -362,19 +360,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, directorId);
 
         if (!films.isEmpty()) {
-            // Загрузка жанров для всех фильмов
-            Set<Long> filmIds = films.stream()
-                    .map(Film::getId)
-                    .collect(java.util.stream.Collectors.toSet());
-
-            Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
-
-            for (Film film : films) {
-                film.setGenres(genresByFilm.getOrDefault(
-                        film.getId(),
-                        java.util.Collections.emptySet()
-                ));
-            }
+            loadGenresForFilms(films);
         }
 
         return films;
@@ -396,19 +382,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, directorId);
 
         if (!films.isEmpty()) {
-            // Загрузка жанров для всех фильмов
-            Set<Long> filmIds = films.stream()
-                    .map(Film::getId)
-                    .collect(java.util.stream.Collectors.toSet());
-
-            Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
-
-            for (Film film : films) {
-                film.setGenres(genresByFilm.getOrDefault(
-                        film.getId(),
-                        java.util.Collections.emptySet()
-                ));
-            }
+            loadGenresForFilms(films);
         }
 
         return films;
@@ -461,20 +435,8 @@ public class FilmDbStorage implements FilmStorage {
 
         if (films.isEmpty()) return films;
 
-        // одним запросом тянем жанры для всех фильмов
-        Set<Long> filmIds = films.stream()
-                .map(Film::getId)
-                .collect(java.util.stream.Collectors.toSet());
+        loadGenresForFilms(films);
 
-        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
-
-        // расставляем жанры без дополнительных запросов
-        for (Film film : films) {
-            film.setGenres(genresByFilm.getOrDefault(
-                    film.getId(),
-                    java.util.Collections.emptySet()
-            ));
-        }
         return films;
     }
 
@@ -506,20 +468,8 @@ public class FilmDbStorage implements FilmStorage {
 
         if (films.isEmpty()) return films;
 
-        // одним запросом тянем жанры для всех фильмов
-        Set<Long> filmIds = films.stream()
-                .map(Film::getId)
-                .collect(java.util.stream.Collectors.toSet());
+        loadGenresForFilms(films);
 
-        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
-
-        // расставляем жанры без дополнительных запросов
-        for (Film film : films) {
-            film.setGenres(genresByFilm.getOrDefault(
-                    film.getId(),
-                    java.util.Collections.emptySet()
-            ));
-        }
         return films;
     }
 
@@ -550,20 +500,8 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, likeQuery);
         if (films.isEmpty()) return films;
 
-        // одним запросом тянем жанры для всех фильмов
-        Set<Long> filmIds = films.stream()
-                .map(Film::getId)
-                .collect(java.util.stream.Collectors.toSet());
+        loadGenresForFilms(films);
 
-        Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
-
-        // расставляем жанры без дополнительных запросов
-        for (Film film : films) {
-            film.setGenres(genresByFilm.getOrDefault(
-                    film.getId(),
-                    java.util.Collections.emptySet()
-            ));
-        }
         return films;
     }
 
@@ -594,20 +532,25 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, likeQuery, likeQuery);
         if (films.isEmpty()) return films;
 
-        // одним запросом тянем жанры для всех фильмов
+        loadGenresForFilms(films);
+
+        return films;
+    }
+
+    private void loadGenresForFilms(List<Film> films) {
+        if (films.isEmpty()) return;
+
+        // Собираем ID фильмов
         Set<Long> filmIds = films.stream()
                 .map(Film::getId)
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toSet());
 
+        // Одним запросом тянем все жанры
         Map<Long, Set<Genre>> genresByFilm = loadGenresByFilmIds(filmIds);
 
-        // расставляем жанры без дополнительных запросов
+        // Расставляем жанры для каждого фильма
         for (Film film : films) {
-            film.setGenres(genresByFilm.getOrDefault(
-                    film.getId(),
-                    java.util.Collections.emptySet()
-            ));
+            film.setGenres(genresByFilm.getOrDefault(film.getId(), Collections.emptySet()));
         }
-        return films;
     }
 }
